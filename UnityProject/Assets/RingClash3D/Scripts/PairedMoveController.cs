@@ -41,9 +41,9 @@ public class PairedMoveController : MonoBehaviour
             return false;
 
         if (category == "punch")
-            return TryPlayStrike(PunchMoves, ref punchIndex, damage, 0.52f);
+            return TryPlayStrike(PunchMoves, ref punchIndex, damage);
         if (category == "kick")
-            return TryPlayStrike(KickMoves, ref kickIndex, damage, 0.58f);
+            return TryPlayStrike(KickMoves, ref kickIndex, damage);
         if (category == "grapple")
             return TryPlayGrapple(damage);
 
@@ -51,7 +51,7 @@ public class PairedMoveController : MonoBehaviour
     }
 
     private bool TryPlayStrike(
-        string[] moves, ref int nextIndex, float damage, float impactFraction)
+        string[] moves, ref int nextIndex, float damage)
     {
         string chosen = FindNextAvailable(moves, ref nextIndex, false);
         if (string.IsNullOrEmpty(chosen) || !receiver.HasClip("hit_a"))
@@ -90,11 +90,14 @@ public class PairedMoveController : MonoBehaviour
         float attackerDuration = performer.GetClipDuration(chosen);
         float receiverDuration = receiver.GetClipDuration(receiverClip);
         float totalDuration = Mathf.Max(attackerDuration, receiverDuration);
-        // Approximate impact timing until the source library provides impact markers.
-        float impactDelay = Mathf.Clamp(
-            Mathf.Min(attackerDuration, receiverDuration) * 0.78f,
-            0.25f,
-            Mathf.Max(0.25f, totalDuration - 0.1f));
+        // Prefer the exact impact timestamp stored in the source animation metadata.
+        float impactDelay = performer.GetClipImpactTime(chosen);
+        if (impactDelay < 0f)
+            impactDelay = receiver.GetClipImpactTime(receiverClip);
+        if (impactDelay < 0f)
+            impactDelay = Mathf.Min(attackerDuration, receiverDuration) * 0.78f;
+        impactDelay = Mathf.Clamp(
+            impactDelay, 0.1f, Mathf.Max(0.1f, totalDuration - 0.05f));
 
         busy = true;
         StartCoroutine(ResolveMove(damage, impactDelay, totalDuration));
