@@ -35,7 +35,8 @@ public class PairedMoveController : MonoBehaviour
 
     public bool TryPlay(string category, float damage, float range)
     {
-        if (busy || (opponentMoves != null && opponentMoves.busy) ||\n            attacker == null || defender == null ||
+        if (busy || (opponentMoves != null && opponentMoves.busy) ||
+            attacker == null || defender == null ||
             performer == null || receiver == null)
             return false;
 
@@ -52,24 +53,31 @@ public class PairedMoveController : MonoBehaviour
         return false;
     }
 
-    private bool TryPlayStrike(
-        string[] moves, ref int nextIndex, float damage)
+    private bool TryPlayStrike(string[] moves, ref int nextIndex, float damage)
     {
         string chosen = FindNextAvailable(moves, ref nextIndex, false);
-        if (string.IsNullOrEmpty(chosen) || !receiver.HasClip("hit_a"))
+        if (string.IsNullOrEmpty(chosen))
             return false;
 
         string reaction = (reactionIndex++ % 2 == 0 && receiver.HasClip("hit_a"))
             ? "hit_a"
             : (receiver.HasClip("hit_b") ? "hit_b" : "hit_a");
 
+        if (!receiver.HasClip(reaction))
+            return false;
+
         if (!performer.PlayClip(chosen) || !receiver.PlayClip(reaction))
             return false;
 
         float attackerDuration = performer.GetClipDuration(chosen);
         float receiverDuration = receiver.GetClipDuration(reaction);
-        float impactDelay = Mathf.Clamp(attackerDuration * impactFraction, 0.12f, 1.0f);
         float totalDuration = Mathf.Max(attackerDuration, receiverDuration);
+
+        float impactDelay = performer.GetClipImpactTime(chosen);
+        if (impactDelay < 0f)
+            impactDelay = attackerDuration * 0.55f;
+        impactDelay = Mathf.Clamp(
+            impactDelay, 0.08f, Mathf.Max(0.08f, totalDuration - 0.05f));
 
         busy = true;
         StartCoroutine(ResolveMove(damage, impactDelay, totalDuration));
@@ -92,12 +100,14 @@ public class PairedMoveController : MonoBehaviour
         float attackerDuration = performer.GetClipDuration(chosen);
         float receiverDuration = receiver.GetClipDuration(receiverClip);
         float totalDuration = Mathf.Max(attackerDuration, receiverDuration);
+
         // Prefer the exact impact timestamp stored in the source animation metadata.
         float impactDelay = performer.GetClipImpactTime(chosen);
         if (impactDelay < 0f)
             impactDelay = receiver.GetClipImpactTime(receiverClip);
         if (impactDelay < 0f)
             impactDelay = Mathf.Min(attackerDuration, receiverDuration) * 0.78f;
+
         impactDelay = Mathf.Clamp(
             impactDelay, 0.1f, Mathf.Max(0.1f, totalDuration - 0.05f));
 
