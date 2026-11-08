@@ -19,6 +19,9 @@ public class MatchManager : MonoBehaviour
 
         player.AddComponent<WrestlerHealth>();
         rival.AddComponent<WrestlerHealth>();
+
+        PairedMoveController paired = player.AddComponent<PairedMoveController>();
+        paired.Setup(player, rival);
     }
 
     private void Update()
