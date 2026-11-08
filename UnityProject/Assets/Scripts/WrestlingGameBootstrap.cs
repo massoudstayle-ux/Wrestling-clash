@@ -9,6 +9,8 @@ public class WrestlingGameBootstrap : MonoBehaviour
     private float rivalHealth = 100f;
     private float playerAttackCooldown;
     private float rivalAttackCooldown;
+    private const float RunnerMoveSpeed = 4.1f;
+    private const float BoxerMoveSpeed = 2.7f;
     private bool blocking;
     private GUIStyle labelStyle;
     private GUIStyle buttonStyle;
@@ -16,8 +18,8 @@ public class WrestlingGameBootstrap : MonoBehaviour
     private void Start()
     {
         CreateArena();
-        player = CreateFighter("PLAYER", new Vector3(-1.4f, 1.325f, 0f), new Color(0.08f, 0.35f, 0.95f)).transform;
-        rival = CreateFighter("RIVAL", new Vector3(1.4f, 1.325f, 0f), new Color(0.85f, 0.12f, 0.12f)).transform;
+        player = CreateFighter("RUNNER", new Vector3(-1.4f, 1.325f, 0f), new Color(0.08f, 0.48f, 0.95f)).transform;
+        rival = CreateFighter("BOXER", new Vector3(1.4f, 1.325f, 0f), new Color(0.82f, 0.16f, 0.12f)).transform;
         CreateCamera();
     }
 
@@ -37,7 +39,7 @@ public class WrestlingGameBootstrap : MonoBehaviour
         Vector3 toPlayer = player.position - rival.position;
         toPlayer.y = 0f;
         if (toPlayer.magnitude > 1.35f)
-            rival.position += toPlayer.normalized * 1.15f * Time.deltaTime;
+            rival.position += toPlayer.normalized * BoxerMoveSpeed * 0.42f * Time.deltaTime;
         rival.rotation = Quaternion.LookRotation(toPlayer.sqrMagnitude > 0.01f ? toPlayer : Vector3.forward);
 
         if (toPlayer.magnitude < 1.65f && rivalAttackCooldown <= 0f)
@@ -64,7 +66,7 @@ public class WrestlingGameBootstrap : MonoBehaviour
     {
         if (direction.sqrMagnitude < 0.01f) return;
         direction = Vector3.ClampMagnitude(direction, 1f);
-        player.position += new Vector3(direction.x, 0f, direction.z) * 3.4f * Time.deltaTime;
+        player.position += new Vector3(direction.x, 0f, direction.z) * RunnerMoveSpeed * Time.deltaTime;
         Vector3 face = rival.position - player.position;
         face.y = 0f;
         if (face.sqrMagnitude > 0.01f) player.rotation = Quaternion.LookRotation(face);
@@ -93,7 +95,7 @@ public class WrestlingGameBootstrap : MonoBehaviour
         body.transform.position = position;
         body.transform.localScale = new Vector3(0.85f, 1.15f, 0.85f);
         Renderer renderer = body.GetComponent<Renderer>();
-        renderer.material = new Material(Shader.Find("Standard"));
+        renderer.material = MakeMaterial(color);
         renderer.material.color = color;
 
         GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -155,7 +157,11 @@ public class WrestlingGameBootstrap : MonoBehaviour
 
     private Material MakeMaterial(Color color)
     {
-        Material material = new Material(Shader.Find("Standard"));
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) shader = Shader.Find("Standard");
+        if (shader == null) shader = Shader.Find("Legacy Shaders/Diffuse");
+        if (shader == null) shader = Shader.Find("Sprites/Default");
+        Material material = new Material(shader);
         material.color = color;
         return material;
     }
@@ -187,7 +193,7 @@ public class WrestlingGameBootstrap : MonoBehaviour
         float w = Screen.width;
         float h = Screen.height;
         GUI.Label(new Rect(w * 0.28f, 8f, w * 0.44f, h * 0.07f),
-            "PLAYER  " + Mathf.CeilToInt(playerHealth) + "     VS     RIVAL  " + Mathf.CeilToInt(rivalHealth), labelStyle);
+            "RUNNER  " + Mathf.CeilToInt(playerHealth) + "     VS     BOXER  " + Mathf.CeilToInt(rivalHealth), labelStyle);
 
         float size = Mathf.Min(w * 0.12f, h * 0.19f);
         float left = 18f;
