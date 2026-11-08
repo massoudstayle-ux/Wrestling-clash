@@ -17,6 +17,8 @@ public class WrestlerAnimationPlayer : MonoBehaviour
         public float fps;
         public int frameCount;
         public bool loop;
+        public float impactTime;
+        public float peakTime;
         public Track[] tracks;
     }
 
@@ -74,6 +76,9 @@ public class WrestlerAnimationPlayer : MonoBehaviour
             int frames = source.Value<int?>("n") ?? 0;
             float fps = source.Value<float?>("fps") ?? 30f;
             bool loop = source.Value<bool?>("loop") ?? false;
+            JObject meta = source["meta"] as JObject;
+            float impactTime = meta != null ? (meta.Value<float?>("impact") ?? -1f) : -1f;
+            float peakTime = meta != null ? (meta.Value<float?>("peak") ?? -1f) : -1f;
             JObject sourceTracks = source["bones"] as JObject;
             if (frames < 2 || fps <= 0f || sourceTracks == null) continue;
 
@@ -121,6 +126,8 @@ public class WrestlerAnimationPlayer : MonoBehaviour
                     fps = fps,
                     frameCount = frames,
                     loop = loop,
+                    impactTime = impactTime,
+                    peakTime = peakTime,
                     tracks = parsed.ToArray()
                 };
             }
@@ -147,6 +154,19 @@ public class WrestlerAnimationPlayer : MonoBehaviour
         return clips.TryGetValue(name, out clip)
             ? (clip.frameCount - 1f) / clip.fps
             : 0f;
+    }
+
+    public float GetClipImpactTime(string name)
+    {
+        Clip clip;
+        if (!clips.TryGetValue(name, out clip))
+            return -1f;
+
+        if (clip.impactTime >= 0f)
+            return clip.impactTime;
+        if (clip.peakTime > 0f)
+            return clip.peakTime;
+        return -1f;
     }
 
     public string FindClipStartingWith(string prefix, string keyword)
