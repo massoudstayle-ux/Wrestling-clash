@@ -46,8 +46,17 @@ jobs:
                   os.makedirs(os.path.dirname(target), exist_ok=True)
                   with z.open(source) as src, open(target, "wb") as out:
                       out.write(src.read())
+
+                  animation_source = f"{prefix}Assets/RingClash3D/Data/Animations/{character}.json"
+                  if animation_source not in z.namelist():
+                      raise SystemExit("Missing animation JSON: " + animation_source)
+                  animation_target = f"UnityProject/Assets/Resources/AnimationLibraries/{character}.json"
+                  os.makedirs(os.path.dirname(animation_target), exist_ok=True)
+                  with z.open(animation_source) as src, open(animation_target, "wb") as out:
+                      out.write(src.read())
               print("Imported original files:", len(entries))
               print("Staged GLB roster:", ", ".join(required))
+              print("Staged runtime animation libraries:", ", ".join(required))
           PY
       - name: Validate animation frame data and paired moves
         run: |
@@ -71,9 +80,11 @@ jobs:
               path = f"UnityProject/Assets/Resources/Wrestlers/{name}.glb"
               assert os.path.isfile(path) and os.path.getsize(path) > 100_000, path
           for name in ("aj", "orton", "boxer", "runner"):
-              path = f"UnityProject/Assets/ImportedOriginal/RingClash3D/Data/Animations/{name}.json"
-              assert os.path.isfile(path) and os.path.getsize(path) > 1_000_000, path
-          print("Manifest, four GLB files and four animation JSON libraries: OK")
+              original = f"UnityProject/Assets/ImportedOriginal/RingClash3D/Data/Animations/{name}.json"
+              runtime = f"UnityProject/Assets/Resources/AnimationLibraries/{name}.json"
+              assert os.path.isfile(original) and os.path.getsize(original) > 1_000_000, original
+              assert os.path.isfile(runtime) and os.path.getsize(runtime) > 1_000_000, runtime
+          print("Manifest, four GLB files, preserved originals and four runtime JSON libraries: OK")
           PY
       - name: Upload Unity project folder (single extraction)
         uses: actions/upload-artifact@v4
