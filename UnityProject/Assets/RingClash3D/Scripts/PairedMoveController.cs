@@ -79,7 +79,7 @@ public class PairedMoveController : MonoBehaviour
         impactDelay = Mathf.Clamp(
             impactDelay, 0.08f, Mathf.Max(0.08f, totalDuration - 0.05f));
 
-        busy = true;
+        SetBusy(true);
         StartCoroutine(ResolveMove(damage, impactDelay, totalDuration));
         return true;
     }
@@ -111,7 +111,7 @@ public class PairedMoveController : MonoBehaviour
         impactDelay = Mathf.Clamp(
             impactDelay, 0.1f, Mathf.Max(0.1f, totalDuration - 0.05f));
 
-        busy = true;
+        SetBusy(true);
         StartCoroutine(ResolveMove(damage, impactDelay, totalDuration));
         return true;
     }
@@ -151,6 +151,13 @@ public class PairedMoveController : MonoBehaviour
 
         float recovery = Mathf.Max(0.15f, totalDuration - impactDelay);
         yield return new WaitForSeconds(recovery);
-        busy = false;
+        SetBusy(false);
+    }
+
+    private void SetBusy(bool value)
+    {
+        busy = value;
+        if (opponentMoves != null)
+            opponentMoves.busy = value;
     }
 }
