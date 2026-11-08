@@ -37,13 +37,9 @@ public class MatchManager : MonoBehaviour
         WrestlerHealth rivalHealth = rival.GetComponent<WrestlerHealth>();
 
         if (playerHealth != null && playerHealth.isKnockedOut)
-        {
             EndMatch(rivalLabel + " WINS");
-        }
         else if (rivalHealth != null && rivalHealth.isKnockedOut)
-        {
             EndMatch(playerLabel + " WINS");
-        }
 
         if (Input.GetKeyDown(KeyCode.R) && matchEnded)
             RestartMatch();
@@ -53,6 +49,7 @@ public class MatchManager : MonoBehaviour
     {
         matchEnded = true;
         resultText = message;
+
         WrestlerController a = player.GetComponent<WrestlerController>();
         WrestlerController b = rival.GetComponent<WrestlerController>();
         if (a != null) a.SetMobileMove(Vector2.zero);
@@ -78,14 +75,11 @@ public class MatchManager : MonoBehaviour
 
             WrestlerController controller = fighter.GetComponent<WrestlerController>();
             if (controller != null)
-            {
-                controller.SetMobileMove(Vector2.zero);
-                {
-                controller.Stun(0f);
-                WrestlerAnimationPlayer animationPlayer = fighter.GetComponent<WrestlerAnimationPlayer>();
-                if (animationPlayer != null) animationPlayer.PlayClip("idle");
-            }
-            }
+                controller.ResetAfterMatch();
+
+            WrestlerAnimationPlayer animationPlayer = fighter.GetComponent<WrestlerAnimationPlayer>();
+            if (animationPlayer != null)
+                animationPlayer.PlayClip("idle");
         }
     }
 
@@ -99,33 +93,30 @@ public class MatchManager : MonoBehaviour
         float top = 22f;
 
         DrawHealthBar(new Rect(20f, top, width, height),
-            player.GetComponent<WrestlerHealth>(), "AJ");
+            player.GetComponent<WrestlerHealth>(), playerLabel);
         DrawHealthBar(new Rect(Screen.width - width - 20f, top, width, height),
-            rival.GetComponent<WrestlerHealth>(), "ORTON");
+            rival.GetComponent<WrestlerHealth>(), rivalLabel);
 
-        if (matchEnded)
-        {
-            GUIStyle title = new GUIStyle(GUI.skin.label);
-            title.alignment = TextAnchor.MiddleCenter;
-            title.fontSize = Mathf.Clamp(Screen.width / 16, 28, 54);
-            title.fontStyle = FontStyle.Bold;
-            title.normal.textColor = Color.white;
+        if (!matchEnded)
+            return;
 
-            GUI.Box(new Rect(Screen.width * 0.2f, Screen.height * 0.34f,
-                Screen.width * 0.6f, Screen.height * 0.25f), "");
-            GUI.Label(new Rect(Screen.width * 0.2f, Screen.height * 0.36f,
-                Screen.width * 0.6f, 65f), resultText, title);
+        GUIStyle title = new GUIStyle(GUI.skin.label);
+        title.alignment = TextAnchor.MiddleCenter;
+        title.fontSize = Mathf.Clamp(Screen.width / 16, 28, 54);
+        title.fontStyle = FontStyle.Bold;
+        title.normal.textColor = Color.white;
 
-            GUIStyle hint = new GUIStyle(GUI.skin.label);
-            hint.alignment = TextAnchor.MiddleCenter;
-            hint.fontSize = 20;
-            hint.normal.textColor = Color.white;
-            GUI.Label(new Rect(Screen.width * 0.2f, Screen.height * 0.47f,
-                Screen.width * 0.6f, 40f), "REMATCH", hint);
-            if (GUI.Button(new Rect(Screen.width * 0.38f, Screen.height * 0.55f,
-                Screen.width * 0.24f, 48f), "REMATCH"))
-                RestartMatch();
-        }
+        GUI.Box(new Rect(Screen.width * 0.2f, Screen.height * 0.34f,
+            Screen.width * 0.6f, Screen.height * 0.25f), "");
+        GUI.Label(new Rect(Screen.width * 0.2f, Screen.height * 0.36f,
+            Screen.width * 0.6f, 65f), resultText, title);
+
+        GUIStyle button = new GUIStyle(GUI.skin.button);
+        button.fontSize = 20;
+        button.fontStyle = FontStyle.Bold;
+        if (GUI.Button(new Rect(Screen.width * 0.35f, Screen.height * 0.53f,
+            Screen.width * 0.3f, 52f), "REMATCH", button))
+            RestartMatch();
     }
 
     private void DrawHealthBar(Rect rect, WrestlerHealth health, string label)
