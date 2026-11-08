@@ -1,0 +1,55 @@
+name: Package Unity Wrestling Project
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "RingClash3D_Unity.zip"
+      - "UnityProject/**"
+      - ".github/workflows/package-unity-project.yml"
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import existing game assets
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import zipfile, os
+          with zipfile.ZipFile("RingClash3D_Unity.zip") as z:
+              bad=z.testzip()
+              if bad: raise SystemExit("Corrupt archive: "+bad)
+              prefix="RingClash3D_Unity/"
+              entries=[n for n in z.namelist() if n.startswith(prefix) and not n.endswith("/")]
+              for n in entries:
+                  rel=n[len(prefix):]
+                  if not rel or rel.startswith("../") or "/../" in rel: continue
+                  if rel.startswith("Assets/"): dst="UnityProject/Assets/ImportedOriginal/"+rel[7:]
+                  else: dst="UnityProject/ImportedOriginal/"+rel
+                  os.makedirs(os.path.dirname(dst),exist_ok=True)
+                  with z.open(n) as src,open(dst,"wb") as out: out.write(src.read())
+              print("Imported archive files:",len(entries))
+          PY
+      - name: Validate project files
+        run: |
+          test -f UnityProject/ProjectSettings/ProjectVersion.txt
+          test -f UnityProject/Packages/manifest.json
+          test -f UnityProject/Assets/RingClash3D/Scripts/WrestlingGameBootstrap.cs
+          test -f UnityProject/Assets/RingClash3D/Scripts/WrestlerController.cs
+          test -f UnityProject/Assets/RingClash3D/Scripts/MatchManager.cs
+          test -f UnityProject/Assets/RingClash3D/Scripts/MobileControls.cs
+          python3 -c 'import json;json.load(open("UnityProject/Packages/manifest.json"));print("Manifest OK")'
+      - name: Package Unity project
+        run: |
+          cd UnityProject
+          zip -qr ../RingClash3D-Unity-Project.zip .
+          cd ..
+          sha256sum RingClash3D-Unity-Project.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RingClash3D-Unity-Project
+          path: RingClash3D-Unity-Project.zip
+          if-no-files-found: error
+          retention-days: 14
