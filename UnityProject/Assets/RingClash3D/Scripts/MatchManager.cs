@@ -6,11 +6,15 @@ public class MatchManager : MonoBehaviour
     private GameObject rival;
     private bool matchEnded;
     private string resultText = "";
+    private string playerLabel = "PLAYER";
+    private string rivalLabel = "OPPONENT";
 
-    public void Setup(GameObject p, GameObject e)
+    public void Setup(GameObject p, GameObject e, string pLabel, string eLabel)
     {
         player = p;
         rival = e;
+        playerLabel = pLabel;
+        rivalLabel = eLabel;
 
         WrestlerController playerController = player.GetComponent<WrestlerController>();
         WrestlerController rivalController = rival.GetComponent<WrestlerController>();
@@ -34,11 +38,11 @@ public class MatchManager : MonoBehaviour
 
         if (playerHealth != null && playerHealth.isKnockedOut)
         {
-            EndMatch("ORTON WINS");
+            EndMatch(rivalLabel + " WINS");
         }
         else if (rivalHealth != null && rivalHealth.isKnockedOut)
         {
-            EndMatch("AJ WINS");
+            EndMatch(playerLabel + " WINS");
         }
 
         if (Input.GetKeyDown(KeyCode.R) && matchEnded)
@@ -76,7 +80,11 @@ public class MatchManager : MonoBehaviour
             if (controller != null)
             {
                 controller.SetMobileMove(Vector2.zero);
+                {
                 controller.Stun(0f);
+                WrestlerAnimationPlayer animationPlayer = fighter.GetComponent<WrestlerAnimationPlayer>();
+                if (animationPlayer != null) animationPlayer.PlayClip("idle");
+            }
             }
         }
     }
@@ -113,7 +121,10 @@ public class MatchManager : MonoBehaviour
             hint.fontSize = 20;
             hint.normal.textColor = Color.white;
             GUI.Label(new Rect(Screen.width * 0.2f, Screen.height * 0.47f,
-                Screen.width * 0.6f, 40f), "Press R to restart", hint);
+                Screen.width * 0.6f, 40f), "REMATCH", hint);
+            if (GUI.Button(new Rect(Screen.width * 0.38f, Screen.height * 0.55f,
+                Screen.width * 0.24f, 48f), "REMATCH"))
+                RestartMatch();
         }
     }
 
