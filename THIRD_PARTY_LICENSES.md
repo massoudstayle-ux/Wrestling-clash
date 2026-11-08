@@ -51,7 +51,7 @@ resolved package list and each package's notices before shipping.
 
 The GitHub Actions inspection of `RingClash3D_Unity.zip` confirmed that the
 archive is a valid ZIP with 98 entries. It contains four GLB wrestler models
-and their JPG textures, ten Mixamo FBX animation files, and four JSON
+and their JPG textures, eleven Mixamo FBX animation files, and four JSON
 animation libraries. The archive documentation and animation QA report were
 also read.
 
@@ -61,7 +61,7 @@ also read.
 | Randy Orton model and textures | Same RigModels notice as AJ in `Godot_Source_README_AR.md` | **Personal / student educational use only**, according to the project's own source documentation | Same restriction: do not include in public or commercial releases without broader written permission. |
 | Boxer model and textures | `boxer.glb` and `boxer_0.jpg` are present in the archive | Unknown / verification required | Identify the creator and obtain the exact license or permission. |
 | Runner model and textures | `runner.glb` and `runner_*.jpg` are present in the archive | Unknown / verification required | Identify the creator and obtain the exact license or permission. |
-| Mixamo animation FBX files | Ten FBX files under `Assets/RingClash3D/Art/Animations/Mixamo/` | Mixamo is named as the source, but the acquisition account, applicable terms, and redistribution permission for these exact files were not included in the archive | Verify the applicable Adobe Mixamo terms and whether the intended packaged redistribution is allowed. Keep required notices. Do not assume MIT applies. |
+| Mixamo animation FBX files | Eleven FBX files under `Assets/RingClash3D/Art/Animations/Mixamo/` | Mixamo is named as the source, but the acquisition account, applicable terms, and redistribution permission for these exact files were not included in the archive | Verify the applicable Adobe Mixamo terms and whether the intended packaged redistribution is allowed. Keep required notices. Do not assume MIT applies. |
 | WWE2011 animation libraries | Four JSON files under `Assets/RingClash3D/Data/Animations/`; the included QA report says active clips are tagged `WWE2011_NEW` and retargeted from WWE2011 banks | Game-derived animation data; original rightsholder and redistribution permission are not established by the archive | Treat as restricted / not cleared for public redistribution. Obtain permission or replace with independently created or appropriately licensed motion data. |
 | Motifect and Haley BVH sources | Mentioned as historical animation sources in `Godot_Source_README_AR.md`; their source files are not listed in the current Unity ZIP inventory | Not verified as included in this Unity archive; exact licenses not established here | If reintroduced, record exact package, author, license, and permitted use before redistribution. |
 | Ring, arena, UI, sound, music, fonts, other imported assets | No complete item-by-item rights inventory was supplied by the inspected archive | Unknown / verification required | Audit each asset and retain its original license or permission. |
