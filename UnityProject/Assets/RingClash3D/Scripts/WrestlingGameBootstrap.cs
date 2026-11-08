@@ -23,6 +23,11 @@ public class WrestlingGameBootstrap : MonoBehaviour
         player.AddComponent<WrestlerController>().isPlayer = true;
         rival.AddComponent<WrestlerController>().isPlayer = false;
 
+        var playerAnimations = player.AddComponent<WrestlerAnimationPlayer>();
+        var rivalAnimations = rival.AddComponent<WrestlerAnimationPlayer>();
+        playerAnimations.LoadLibrary("aj");
+        rivalAnimations.LoadLibrary("orton");
+
         var cameraObject = new GameObject("MatchCamera");
         var camera = cameraObject.AddComponent<Camera>();
         camera.tag = "MainCamera";
