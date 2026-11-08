@@ -45,15 +45,15 @@ jobs:
           projectPath: UnityProject
           unityVersion: auto
           targetPlatform: Android
+          buildMethod: WrestlingAndroidBuilder.Build
+          manualExit: true
           androidExportType: androidPackage
-          buildName: RingClash3D
-          buildsPath: build
 
       - name: Verify APK output
         run: |
           set -euo pipefail
-          find build -type f -name '*.apk' -print -quit | grep -q . || {
-            echo "::error::Unity finished without producing an APK."
+          test -s build/Android/RingClash3D.apk || {
+            echo "::error::Unity finished without producing build/Android/RingClash3D.apk."
             find build -maxdepth 4 -type f -print || true
             exit 1
           }
@@ -62,6 +62,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RingClash3D-Android-APK
-          path: build/**/*.apk
+          path: build/Android/RingClash3D.apk
           if-no-files-found: error
           retention-days: 14
