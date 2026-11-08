@@ -1,18 +1,25 @@
-# RingClash3D — Unity starter project
+# RingClash3D — Unity 2022.3 LTS
 
-This is the first Unity gameplay prototype assembled from the existing repository archive.
+## افتح المشروع
+1. نزّل Artifact باسم `RingClash3D-Unity-Project` من GitHub Actions.
+2. فك ضغطه مرة واحدة.
+3. افتح المجلد الناتج في Unity Hub بواسطة Unity 2022.3 LTS.
+4. انتظر تثبيت glTFast واستيراد نماذج GLB. ينشئ المحرر مشهد Main تلقائياً.
+5. افتح `Assets/Scenes/Main.unity` واضغط Play.
 
-## Open
-1. Download the GitHub Actions artifact named `RingClash3D-Unity-Project`.
-2. Extract it.
-3. Open the extracted `UnityProject` folder in Unity Hub using Unity 2022.3 LTS or a compatible 2022.3 editor.
-4. Press Play.
+## الموجود حالياً
+- حلبة ثلاثية الأبعاد مع الحبال والأعمدة والإضاءة.
+- تحميل نموذجي AJ وOrton الحقيقيين من ملفات GLB عبر glTFast.
+- ملفات Boxer وRunner محفوظة داخل Resources لتوسيع اختيار المصارعين.
+- حركة أولية للاعب وخصم AI، وأزرار Punch / Kick / Grapple / Block.
+- كاميرا تتابع منتصف المسافة بين المصارعين.
+- أزرار لمس أولية مناسبة للهاتف.
 
-## Current prototype
-- Ring, ropes, posts, arena lighting and follow camera are generated at runtime.
-- Player movement and an AI opponent.
-- Punch, kick, grapple and block inputs.
-- On-screen touch buttons for Android.
+## الحركات
+مكتبات JSON ذات 92 مقطعاً لكل مصارع محفوظة كما هي في `Assets/ImportedOriginal/RingClash3D/Data/Animations`. لم يتم بعد تحويل هذه المقاطع إلى Unity AnimationClips أو ربطها بالـ Animator. ملفات FBX الإضافية محفوظة أيضاً.
 
-## Important status
-The current fighters are temporary primitive placeholders. Original character models, FBX clips and JSON animation libraries are preserved under `Assets/ImportedOriginal`; they have not yet been retargeted or connected to the new Unity animator. The first Actions job packages the project and validates its structure; it does not run the Unity Editor or produce an APK. Visual/gameplay testing is still required in Unity.
+## الاختبار والحالة
+GitHub Actions يفحص سلامة ZIP ووجود ملفات المشروع والأصول، ثم ينشر حزمة المشروع. هذا لا يشغّل Unity Editor ولا يثبت أن عرض النماذج أو الحركات قد اختُبر بصرياً؛ يلزم فتح المشروع في Unity للتحقق النهائي.
+
+## ملاحظة الترخيص
+وثائق الأرشيف الأصلي تذكر أن نماذج AJ وOrton مرخّصة للاستخدام الشخصي/التعليمي فقط. لا تنشر نسخة عامة أو تجارية بهذه النماذج قبل التأكد من الترخيص أو استبدالها بأصول تملك حق استخدامها.
