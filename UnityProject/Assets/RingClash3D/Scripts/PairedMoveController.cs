@@ -16,6 +16,7 @@ public class PairedMoveController : MonoBehaviour
     private WrestlerAnimationPlayer receiver;
     private WrestlerController attacker;
     private WrestlerController defender;
+    private PairedMoveController opponentMoves;
 
     private bool busy;
     private int punchIndex;
@@ -23,17 +24,18 @@ public class PairedMoveController : MonoBehaviour
     private int grappleIndex;
     private int reactionIndex;
 
-    public void Setup(GameObject a, GameObject b)
+    public void Setup(GameObject a, GameObject b, PairedMoveController opposingController)
     {
         attacker = a.GetComponent<WrestlerController>();
         defender = b.GetComponent<WrestlerController>();
         performer = a.GetComponent<WrestlerAnimationPlayer>();
         receiver = b.GetComponent<WrestlerAnimationPlayer>();
+        opponentMoves = opposingController;
     }
 
     public bool TryPlay(string category, float damage, float range)
     {
-        if (busy || attacker == null || defender == null ||
+        if (busy || (opponentMoves != null && opponentMoves.busy) ||\n            attacker == null || defender == null ||
             performer == null || receiver == null)
             return false;
 
