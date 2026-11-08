@@ -1,6 +1,7 @@
 # Third-Party Assets and Licenses
 
 This file tracks third-party components and assets used by Wrestling-clash.
+It is an inventory, not a grant of rights.
 
 ## Scope
 
@@ -30,10 +31,10 @@ license information.
 
 | Component / version | Source / rightsholder | License | Required notice / action |
 | --- | --- | --- | --- |
-| Unity Editor and Unity Runtime 2022.3.62f1 | Unity Technologies | Unity Editor Software Terms and applicable Unity Terms of Service; not an MIT-licensed component | Use Unity only under an eligible Unity plan and comply with the terms applicable to the build and distribution. The Unity Runtime may be distributed only as an integrated part of a Unity project, subject to those terms. |
-| glTFast `com.unity.cloud.gltfast` 6.17.0 | Unity Technologies and glTFast authors | Apache License 2.0 | Preserve the upstream license and applicable third-party notices when redistributing the package or its covered code. |
+| Unity Editor and Unity Runtime 2022.3.62f1 | Unity Technologies | Unity Editor Software Terms and applicable Unity Terms of Service; not an MIT-licensed component | Use Unity under an eligible plan and comply with terms applicable to the build and distribution. |
+| glTFast `com.unity.cloud.gltfast` 6.17.0 | Unity Technologies and glTFast authors | Apache License 2.0 | Preserve the upstream license and applicable third-party notices when redistributing covered code. |
 | Newtonsoft Json Unity package `com.unity.nuget.newtonsoft-json` 3.2.1 (corresponds to Json.NET 13.0.2) | James Newton-King / Newtonsoft | MIT | Preserve the Json.NET copyright and MIT license notice when redistributing covered copies. |
-| Unity built-in modules: AI, Physics, UI, Animation | Unity Technologies | Part of the Unity package/runtime distribution; governed by applicable Unity terms | Do not treat these modules as project-owned or relicense them under this repository's MIT license. |
+| Unity built-in modules: AI, Physics, UI, Animation | Unity Technologies | Governed by applicable Unity terms | Do not treat these modules as project-owned or relicense them under this repository's MIT license. |
 
 Official references:
 - Unity Editor Software Terms: https://activation.unity3d.com/legal/editor-terms-of-service/software
@@ -41,27 +42,56 @@ Official references:
 - Newtonsoft Json Unity package documentation: https://docs.unity.cn/Packages/com.unity.nuget.newtonsoft-json%403.2/manual/index.html
 - Json.NET MIT license: https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md
 
-Note: this is a list of direct dependencies declared in the manifest, not a
-complete inventory of every transitive package pulled in by Unity Package
-Manager. Review the resolved package lock and each package's notices before
-shipping a release.
+Note: this covers direct dependencies declared in the manifest, not every
+transitive package resolved by Unity Package Manager. The repository currently
+does not contain `UnityProject/Packages/packages-lock.json`; inspect the
+resolved package list and each package's notices before shipping.
 
-## Asset register
+## Asset audit — findings from the checked-in source archive
 
-Add an entry for each third-party component or asset before redistributing it.
-Record its source, creator/rightsholder, exact license or permission, and any
-required attribution or restrictions. Use `Unknown / verification required`
-rather than guessing.
+The GitHub Actions inspection of `RingClash3D_Unity.zip` confirmed that the
+archive is a valid ZIP with 98 entries. It contains four GLB wrestler models
+and their JPG textures, ten Mixamo FBX animation files, and four JSON
+animation libraries. The archive documentation and animation QA report were
+also read.
 
-| Component / asset | Source | Creator / rightsholder | License / permission | Required action |
-| --- | --- | --- | --- | --- |
-| Wrestler models, likenesses, names, costumes, and logos | Not established from the inspected files | Unknown | Unknown / verification required | Confirm ownership or written permission before public or commercial distribution |
-| Wrestling animations and motion data | Not established from the inspected files | Unknown | Unknown / verification required | Identify each source and confirm redistribution rights |
-| Ring, arena, textures, audio, UI art, fonts, and other imported assets | Not yet inventoried | Unknown | Unknown / verification required | Audit imported assets and preserve each original license or permission |
+| Component / asset | Evidence and source stated in project files | Rights status | Required action |
+| --- | --- | --- | --- |
+| AJ Styles model and textures | `Godot_Source_README_AR.md` identifies the supplied AJ model as a RigModels asset | **Personal / student educational use only**, according to the project's own source documentation | Do not include in public or commercial releases unless the rightsholder grants broader written permission. Replace for distributable builds if permission is unavailable. |
+| Randy Orton model and textures | Same RigModels notice as AJ in `Godot_Source_README_AR.md` | **Personal / student educational use only**, according to the project's own source documentation | Same restriction: do not include in public or commercial releases without broader written permission. |
+| Boxer model and textures | `boxer.glb` and `boxer_0.jpg` are present in the archive | Unknown / verification required | Identify the creator and obtain the exact license or permission. |
+| Runner model and textures | `runner.glb` and `runner_*.jpg` are present in the archive | Unknown / verification required | Identify the creator and obtain the exact license or permission. |
+| Mixamo animation FBX files | Ten FBX files under `Assets/RingClash3D/Art/Animations/Mixamo/` | Mixamo is named as the source, but the acquisition account, applicable terms, and redistribution permission for these exact files were not included in the archive | Verify the applicable Adobe Mixamo terms and whether the intended packaged redistribution is allowed. Keep required notices. Do not assume MIT applies. |
+| WWE2011 animation libraries | Four JSON files under `Assets/RingClash3D/Data/Animations/`; the included QA report says active clips are tagged `WWE2011_NEW` and retargeted from WWE2011 banks | Game-derived animation data; original rightsholder and redistribution permission are not established by the archive | Treat as restricted / not cleared for public redistribution. Obtain permission or replace with independently created or appropriately licensed motion data. |
+| Motifect and Haley BVH sources | Mentioned as historical animation sources in `Godot_Source_README_AR.md`; their source files are not listed in the current Unity ZIP inventory | Not verified as included in this Unity archive; exact licenses not established here | If reintroduced, record exact package, author, license, and permitted use before redistribution. |
+| Ring, arena, UI, sound, music, fonts, other imported assets | No complete item-by-item rights inventory was supplied by the inspected archive | Unknown / verification required | Audit each asset and retain its original license or permission. |
+
+### Release decision
+
+**The current asset set is not cleared for public or commercial redistribution.**
+The clearest blocker is the documented personal/student-only restriction on
+the AJ and Orton RigModels models. The WWE2011-derived animation libraries,
+Mixamo FBX files, Boxer/Runner models, and any other imported materials also
+need their exact permissions verified. This is a rights-status finding, not a
+claim that any specific rightsholder has denied permission.
+
+Until those checks are complete, keep the repository private if appropriate
+and do not publish a build containing assets whose redistribution rights are
+unclear. A safer release path is to replace restricted models and motion data
+with assets created by the project or obtained under licenses that explicitly
+allow the intended distribution.
+
+## Asset register maintenance
+
+For every third-party component, record its exact source URL, creator or
+rightsholder, license version, date obtained, required attribution, and whether
+commercial use and redistribution inside an APK are permitted. Use
+`Unknown / verification required` rather than guessing.
+
+Keep original license texts and required notices with the relevant asset.
+If permission is unclear or unavailable, exclude the asset from public
+releases or replace it with an appropriately licensed alternative.
 
 ## Contributors
 
 Only add assets when their license permits the intended use and distribution.
-Keep original license texts and required notices with the relevant asset.
-If permission is unclear or unavailable, exclude the asset from public releases
-or replace it with an appropriately licensed alternative.
