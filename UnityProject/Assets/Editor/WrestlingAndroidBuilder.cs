@@ -2,9 +2,7 @@ using System;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public static class WrestlingAndroidBuilder
 {
@@ -16,14 +14,12 @@ public static class WrestlingAndroidBuilder
             string sceneRelativePath = "Assets/Scenes/Main.unity";
             string sceneFullPath = Path.Combine(projectRoot, sceneRelativePath);
 
+            // Never manufacture an empty scene: that would produce a blank APK
+            // and falsely suggest that the wrestling game had been built.
             if (!File.Exists(sceneFullPath))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(sceneFullPath));
-                Scene scene = EditorSceneManager.NewScene(
-                    NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                if (!EditorSceneManager.SaveScene(scene, sceneFullPath))
-                    throw new Exception("Could not create Assets/Scenes/Main.unity");
-            }
+                throw new FileNotFoundException(
+                    "Gameplay scene is missing: " + sceneRelativePath +
+                    ". Restore/import the complete Unity game source before building.");
 
             EditorBuildSettings.scenes = new[]
             {
@@ -60,6 +56,9 @@ public static class WrestlingAndroidBuilder
 
             if (report.summary.result != BuildResult.Succeeded)
                 throw new Exception("Android build failed: " + report.summary.result);
+
+            if (!File.Exists(outputPath) || new FileInfo(outputPath).Length == 0)
+                throw new Exception("Unity reported success but the APK is missing or empty.");
 
             Debug.Log("WRESTLING_ANDROID_APK=" + outputPath);
             Debug.Log("APK_SIZE_BYTES=" + new FileInfo(outputPath).Length);
