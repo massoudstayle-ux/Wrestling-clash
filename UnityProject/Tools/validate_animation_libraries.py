@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-"""Validate wrestling animation JSON libraries without modifying original files."""
+"""Validate wrestling animation JSON libraries and their GLB skeleton bindings."""
 import json
 import pathlib
+import struct
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / "Assets" / "ImportedOriginal" / "RingClash3D" / "Data" / "Animations"
+MODELS = ROOT / "Assets" / "Resources" / "Wrestlers"
 CHARACTERS = ("aj", "orton", "boxer", "runner")
+STRIKES = ("p1", "p2", "p3", "p4", "k1", "k2", "k3", "k4")
+PAIRED_MOVES = (
+    "ddt", "suplex", "slam", "powerbomb", "piledriver", "tiger",
+    "powerslam", "emerald", "electric", "burning", "ribbreaker",
+    "tombstone", "aa",
+)
 errors = []
 report = [
     "# Animation library validation",
@@ -15,6 +23,22 @@ report = [
     "Original JSON files are read-only; this script does not rewrite them.",
     "",
 ]
+
+
+def read_glb_node_names(path):
+    """Read node names from the JSON chunk of a binary glTF file."""
+    raw = path.read_bytes()
+    if len(raw) < 20 or raw[:4] != b"glTF":
+        raise ValueError("not a valid GLB header")
+    version, total_length = struct.unpack_from("<II", raw, 4)
+    if version != 2 or total_length != len(raw):
+        raise ValueError("unsupported GLB version or invalid file length")
+    chunk_length, chunk_type = struct.unpack_from("<II", raw, 12)
+    if chunk_type != 0x4E4F534A or 20 + chunk_length > len(raw):
+        raise ValueError("missing GLB JSON chunk")
+    document = json.loads(raw[20:20 + chunk_length].decode("utf-8").rstrip(" \t\r\n\0"))
+    return {node.get("name", "") for node in document.get("nodes", [])}
+
 
 for character in CHARACTERS:
     path = DATA / f"{character}.json"
@@ -39,6 +63,29 @@ for character in CHARACTERS:
     report += [f"## {character.upper()}", "",
                f"- Skeleton bones: {len(skeleton)}",
                f"- Animation clips: {len(clips)}"]
+
+    model_path = MODELS / f"{character}.glb"
+    if not model_path.is_file():
+        errors.append(f"{character}: missing staged GLB model {model_path}")
+    else:
+        try:
+            model_nodes = read_glb_node_names(model_path)
+            missing_bones = sorted(set(skeleton) - model_nodes)
+            if missing_bones:
+                errors.append(
+                    f"{character}: GLB is missing animation bones: {', '.join(missing_bones)}")
+            else:
+                report.append(f"- GLB skeleton name mapping: OK ({len(skeleton)} JSON bones)")
+        except Exception as exc:
+            errors.append(f"{character}: cannot inspect GLB skeleton: {exc}")
+
+    required = ("idle", "walk", "run", "hit_a", "hit_b") + STRIKES
+    missing = [name for name in required if name not in clips]
+    if missing:
+        errors.append(f"{character}: missing runtime clips: {', '.join(missing)}")
+    elif clips["idle"].get("loop") is not True:
+        errors.append(f"{character}: idle clip must be marked loop=true")
+
     bad_clips = 0
     paired = set()
 
@@ -70,7 +117,8 @@ for character in CHARACTERS:
                 bad_clips += 1
             elif not isinstance(values, list) or len(values) != frames * 4:
                 actual = len(values) if isinstance(values, list) else "non-list"
-                errors.append(f"{character}/{clip_name}/{bone_name}: expected {frames*4} quaternion values, got {actual}")
+                errors.append(
+                    f"{character}/{clip_name}/{bone_name}: expected {frames*4} quaternion values, got {actual}")
                 bad_clips += 1
 
         root = clip.get("root")
@@ -89,15 +137,43 @@ for character in CHARACTERS:
 
     complete_pairs = sorted(move for move in paired
                             if f"t_{move}" in clips and f"d_{move}" in clips)
+    for move in PAIRED_MOVES:
+        performer_name, receiver_name = f"t_{move}", f"d_{move}"
+        if performer_name not in clips or receiver_name not in clips:
+            errors.append(f"{character}: incomplete required move pair {performer_name}/{receiver_name}")
+            continue
+        performer_meta = clips[performer_name].get("meta", {})
+        receiver_meta = clips[receiver_name].get("meta", {})
+        impact_a = performer_meta.get("impact")
+        impact_b = receiver_meta.get("impact")
+        if not isinstance(impact_a, (int, float)) or not isinstance(impact_b, (int, float)):
+            errors.append(f"{character}/{move}: missing performer/receiver impact timestamp")
+        elif abs(impact_a - impact_b) > 0.05:
+            errors.append(
+                f"{character}/{move}: performer/receiver impact mismatch ({impact_a} vs {impact_b})")
+        elif impact_a <= 0 or impact_a >= min(clips[performer_name]["len"], clips[receiver_name]["len"]):
+            errors.append(f"{character}/{move}: impact timestamp outside paired clip duration")
+
+    for name in STRIKES:
+        meta = clips.get(name, {}).get("meta", {})
+        peak = meta.get("peak")
+        duration = clips.get(name, {}).get("len", 0)
+        if not isinstance(peak, (int, float)) or peak <= 0 or peak >= duration:
+            errors.append(f"{character}/{name}: missing or invalid strike peak timestamp")
+
     report += [f"- Clips with structural issues: {bad_clips}",
                f"- Complete performer/receiver move pairs: {len(complete_pairs)}",
+               f"- Required paired moves checked: {len(PAIRED_MOVES)}",
                "", "Paired moves: " + (", ".join(complete_pairs) if complete_pairs else "None detected"), ""]
 
 report += ["## Result", ""]
 if errors:
     report += [f"FAILED — {len(errors)} issue(s).", ""] + [f"- {e}" for e in errors]
 else:
-    report += ["PASSED — all four libraries passed structural validation."]
+    report += [
+        "PASSED — all four libraries, GLB skeleton mappings, strike clips,",
+        "paired moves, and source impact timestamps passed validation.",
+    ]
 (ROOT / "AnimationValidationReport.md").write_text("\n".join(report) + "\n", encoding="utf-8")
 print("\n".join(report))
 if errors:
