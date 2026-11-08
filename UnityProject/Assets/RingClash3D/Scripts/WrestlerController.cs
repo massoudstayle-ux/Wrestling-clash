@@ -159,6 +159,14 @@ public class WrestlerController : MonoBehaviour
     {
         stunTimer = Mathf.Max(stunTimer, duration);
     }
+
+    public void ResetAfterMatch()
+    {
+        attackCooldown = 0f;
+        stunTimer = 0f;
+        blockTimer = 0f;
+        SetMobileMove(Vector2.zero);
+    }
 }
 
 public class WrestlerHealth : MonoBehaviour
