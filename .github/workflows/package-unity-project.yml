@@ -13,43 +13,68 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Import existing game assets
+      - name: Import original assets and stage the four GLB wrestlers
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import zipfile, os
-          with zipfile.ZipFile("RingClash3D_Unity.zip") as z:
-              bad=z.testzip()
-              if bad: raise SystemExit("Corrupt archive: "+bad)
-              prefix="RingClash3D_Unity/"
-              entries=[n for n in z.namelist() if n.startswith(prefix) and not n.endswith("/")]
-              for n in entries:
-                  rel=n[len(prefix):]
-                  if not rel or rel.startswith("../") or "/../" in rel: continue
-                  if rel.startswith("Assets/"): dst="UnityProject/Assets/ImportedOriginal/"+rel[7:]
-                  else: dst="UnityProject/ImportedOriginal/"+rel
-                  os.makedirs(os.path.dirname(dst),exist_ok=True)
-                  with z.open(n) as src,open(dst,"wb") as out: out.write(src.read())
-              print("Imported archive files:",len(entries))
+          import zipfile, os, json
+          archive = "RingClash3D_Unity.zip"
+          required = ("aj", "orton", "boxer", "runner")
+          with zipfile.ZipFile(archive) as z:
+              bad = z.testzip()
+              if bad:
+                  raise SystemExit("Corrupt archive: " + bad)
+              prefix = "RingClash3D_Unity/"
+              entries = [n for n in z.namelist() if n.startswith(prefix) and not n.endswith("/")]
+              for name in entries:
+                  rel = name[len(prefix):]
+                  if not rel or rel.startswith("../") or "/../" in rel:
+                      continue
+                  if rel.startswith("Assets/"):
+                      dst = "UnityProject/Assets/ImportedOriginal/" + rel[7:]
+                  else:
+                      dst = "UnityProject/ImportedOriginal/" + rel
+                  os.makedirs(os.path.dirname(dst), exist_ok=True)
+                  with z.open(name) as src, open(dst, "wb") as out:
+                      out.write(src.read())
+
+              for character in required:
+                  source = f"{prefix}Assets/RingClash3D/Art/Characters/{character}.glb"
+                  if source not in z.namelist():
+                      raise SystemExit("Missing character GLB: " + source)
+                  target = f"UnityProject/Assets/Resources/Wrestlers/{character}.glb"
+                  os.makedirs(os.path.dirname(target), exist_ok=True)
+                  with z.open(source) as src, open(target, "wb") as out:
+                      out.write(src.read())
+              print("Imported original files:", len(entries))
+              print("Staged GLB roster:", ", ".join(required))
           PY
-      - name: Validate project files
+      - name: Validate Unity project and imported assets
         run: |
+          set -euo pipefail
           test -f UnityProject/ProjectSettings/ProjectVersion.txt
           test -f UnityProject/Packages/manifest.json
+          test -f UnityProject/Assets/Editor/WrestlingProjectSetup.cs
           test -f UnityProject/Assets/RingClash3D/Scripts/WrestlingGameBootstrap.cs
           test -f UnityProject/Assets/RingClash3D/Scripts/WrestlerController.cs
           test -f UnityProject/Assets/RingClash3D/Scripts/MatchManager.cs
           test -f UnityProject/Assets/RingClash3D/Scripts/MobileControls.cs
-          python3 -c 'import json;json.load(open("UnityProject/Packages/manifest.json"));print("Manifest OK")'
-      - name: Package Unity project
-        run: |
-          cd UnityProject
-          zip -qr ../RingClash3D-Unity-Project.zip .
-          cd ..
-          sha256sum RingClash3D-Unity-Project.zip
-      - uses: actions/upload-artifact@v4
+          python3 - <<'PY'
+          import json, os
+          manifest = json.load(open("UnityProject/Packages/manifest.json"))
+          assert manifest["dependencies"]["com.unity.cloud.gltfast"] == "6.17.0"
+          for name in ("aj", "orton", "boxer", "runner"):
+              path = f"UnityProject/Assets/Resources/Wrestlers/{name}.glb"
+              assert os.path.isfile(path) and os.path.getsize(path) > 100_000, path
+          for name in ("aj", "orton", "boxer", "runner"):
+              path = f"UnityProject/Assets/ImportedOriginal/RingClash3D/Data/Animations/{name}.json"
+              assert os.path.isfile(path) and os.path.getsize(path) > 1_000_000, path
+          print("Manifest, four GLB files and four animation JSON libraries: OK")
+          PY
+      - name: Upload Unity project folder (single extraction)
+        uses: actions/upload-artifact@v4
         with:
           name: RingClash3D-Unity-Project
-          path: RingClash3D-Unity-Project.zip
+          path: UnityProject/
           if-no-files-found: error
           retention-days: 14
