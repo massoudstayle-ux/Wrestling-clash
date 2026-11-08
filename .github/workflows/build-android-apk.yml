@@ -1,0 +1,67 @@
+name: Build Wrestling Clash Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wrestling-clash-android-build
+  cancel-in-progress: false
+
+jobs:
+  build-android:
+    name: Build Android APK with Unity
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Unity license secrets are configured
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$UNITY_LICENSE" ]; then
+            echo "::error::Missing UNITY_LICENSE. Add your Unity license file contents in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
+            echo "::error::Missing UNITY_EMAIL or UNITY_PASSWORD. Add the Unity account credentials as Actions secrets."
+            exit 1
+          fi
+
+      - name: Build Android APK
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: UnityProject
+          unityVersion: auto
+          targetPlatform: Android
+          androidExportType: androidPackage
+          buildName: RingClash3D
+          buildsPath: build
+
+      - name: Verify APK output
+        run: |
+          set -euo pipefail
+          find build -type f -name '*.apk' -print -quit | grep -q . || {
+            echo "::error::Unity finished without producing an APK."
+            find build -maxdepth 4 -type f -print || true
+            exit 1
+          }
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RingClash3D-Android-APK
+          path: build/**/*.apk
+          if-no-files-found: error
+          retention-days: 14
