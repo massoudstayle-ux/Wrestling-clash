@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-          import zipfile, json
+          import zipfile, json, csv
           from pathlib import Path
 
           archive = Path("RingClash3D_Unity.zip")
@@ -41,6 +41,8 @@ jobs:
                   return value[:160]
               return value
 
+          all_clips = []
+          character_summaries = []
           with zipfile.ZipFile(archive) as z:
               infos = z.infolist()
               names = [i.filename for i in infos]
@@ -68,14 +70,57 @@ jobs:
                       obj = json.loads(z.read(name))
                       report += ["", f"FILE: {name}", f"ROOT_TYPE: {type(obj).__name__}"]
                       report.append(json.dumps(summarize(obj), ensure_ascii=False, indent=2)[:12000])
+                      if isinstance(obj, dict) and isinstance(obj.get("clips"), dict):
+                          char = obj.get("char", Path(name).stem)
+                          clips = obj["clips"]
+                          valid = 0
+                          for clip_name, clip in clips.items():
+                              if not isinstance(clip, dict):
+                                  continue
+                              row = {
+                                "character": char,
+                                "clip": clip_name,
+                                "fps": clip.get("fps"),
+                                "frames": clip.get("n"),
+                                "duration_seconds": clip.get("len"),
+                                "loop": clip.get("loop"),
+                                "bone_tracks": len(clip.get("bones", {})) if isinstance(clip.get("bones"), dict) else 0,
+                                "source_tag": clip.get("source", clip.get("tag", "")),
+                              }
+                              all_clips.append(row)
+                              valid += 1
+                          character_summaries.append((char, len(clips), valid, len(obj.get("bones", []))))
                   except Exception as e:
                       report += [f"FILE: {name}", f"JSON_PARSE_ERROR: {e}"]
+
+              report += ["", "ANIMATION CLIP CATALOG SUMMARY:"]
+              for char, total, valid, bone_count in character_summaries:
+                  report.append(f"{char}: clips={total}, parsed={valid}, skeleton_bones={bone_count}")
+              report.append(f"TOTAL_CLIP_ROWS: {len(all_clips)}")
+              if all_clips:
+                  by_name = {}
+                  for row in all_clips:
+                      by_name.setdefault(row["clip"], []).append(row["character"])
+                  report.append("CLIPS_PRESENT_FOR_ALL_FOUR: " + str(sum(1 for chars in by_name.values() if len(set(chars)) == 4)))
+                  report.append("CLIPS_NOT_PRESENT_FOR_ALL_FOUR: " + str(sum(1 for chars in by_name.values() if len(set(chars)) != 4)))
 
               project_markers = [n for n in names if n.endswith((".unity",".cs",".asmdef","ProjectVersion.txt","manifest.json",".asset",".prefab"))]
               report += ["", "UNITY PROJECT MARKERS:", *(project_markers or ["NONE FOUND"])]
 
-          (out / "inspection-report.txt").write_text("\n".join(report), encoding="utf-8")
-          print("\n".join(report[:100]))
+          if all_clips:
+              with (out / "animation-clip-catalog.csv").open("w", newline="", encoding="utf-8") as f:
+                  writer = csv.DictWriter(f, fieldnames=list(all_clips[0].keys()))
+                  writer.writeheader()
+                  writer.writerows(all_clips)
+              with (out / "animation-clip-catalog.md").open("w", encoding="utf-8") as f:
+                  f.write("# فهرس حركات المصارعين\\n\\n")
+                  f.write("| الشخصية | الحركة | FPS | الإطارات | المدة | تكرار | مسارات العظام | المصدر |\\n")
+                  f.write("|---|---|---:|---:|---:|---|---:|---|\\n")
+                  for r in all_clips:
+                      f.write(f"| {r['character']} | {r['clip']} | {r['fps']} | {r['frames']} | {r['duration_seconds']} | {r['loop']} | {r['bone_tracks']} | {r['source_tag']} |\\n")
+
+          (out / "inspection-report.txt").write_text("\\n".join(report), encoding="utf-8")
+          print("\\n".join(report[:100]))
           PY
 
       - name: Upload inspection package
