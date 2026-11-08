@@ -16,8 +16,8 @@ public class WrestlingGameBootstrap : MonoBehaviour
     private void Start()
     {
         CreateArena();
-        player = CreateFighter("PLAYER", new Vector3(-1.4f, 1.15f, 0f), new Color(0.08f, 0.35f, 0.95f)).transform;
-        rival = CreateFighter("RIVAL", new Vector3(1.4f, 1.15f, 0f), new Color(0.85f, 0.12f, 0.12f)).transform;
+        player = CreateFighter("PLAYER", new Vector3(-1.4f, 1.325f, 0f), new Color(0.08f, 0.35f, 0.95f)).transform;
+        rival = CreateFighter("RIVAL", new Vector3(1.4f, 1.325f, 0f), new Color(0.85f, 0.12f, 0.12f)).transform;
         CreateCamera();
     }
 
@@ -46,9 +46,9 @@ public class WrestlingGameBootstrap : MonoBehaviour
             if (!blocking) playerHealth = Mathf.Max(0f, playerHealth - 7f);
         }
 
-        player.position = new Vector3(Mathf.Clamp(player.position.x, -2.7f, 2.7f), 1.15f,
+        player.position = new Vector3(Mathf.Clamp(player.position.x, -2.7f, 2.7f), 1.325f,
             Mathf.Clamp(player.position.z, -2.7f, 2.7f));
-        rival.position = new Vector3(Mathf.Clamp(rival.position.x, -2.7f, 2.7f), 1.15f,
+        rival.position = new Vector3(Mathf.Clamp(rival.position.x, -2.7f, 2.7f), 1.325f,
             Mathf.Clamp(rival.position.z, -2.7f, 2.7f));
 
         if (gameCamera != null)
