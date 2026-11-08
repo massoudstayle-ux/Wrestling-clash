@@ -1,0 +1,70 @@
+name: Inspect Wrestling Unity Archive
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Inspect ZIP without modifying it
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+
+          archive = Path("RingClash3D_Unity.zip")
+          report = Path("inspection-report.txt")
+          if not archive.is_file():
+              report.write_text("ERROR: RingClash3D_Unity.zip was not found in repository root.\n")
+              raise SystemExit(1)
+
+          lines = [
+              "ARCHIVE: " + archive.name,
+              f"ARCHIVE_SIZE_BYTES: {archive.stat().st_size}",
+          ]
+          try:
+              with zipfile.ZipFile(archive) as z:
+                  infos = z.infolist()
+                  lines.append(f"ENTRY_COUNT: {len(infos)}")
+                  lines.append("")
+                  lines.append("TOP-LEVEL PATHS:")
+                  roots = sorted({i.filename.split('/')[0] for i in infos if i.filename})
+                  lines.extend(roots[:200])
+                  lines.append("")
+                  lines.append("PROJECT / CONFIG FILES:")
+                  wanted = ("ProjectVersion.txt", "manifest.json", ".unity", ".cs", ".asmdef")
+                  matches = [i for i in infos if any(i.filename.endswith(x) for x in wanted)]
+                  lines.extend(f"{i.filename} | {i.file_size} bytes" for i in matches[:1500])
+                  lines.append("")
+                  lines.append("FIRST 3000 ARCHIVE ENTRIES:")
+                  lines.extend(f"{i.filename} | {i.file_size} bytes" for i in infos[:3000])
+                  bad = z.testzip()
+                  lines.append("")
+                  lines.append("ZIP_INTEGRITY: " + ("OK" if bad is None else "FAILED at " + bad))
+          except Exception as e:
+              lines.append("ZIP_READ_ERROR: " + repr(e))
+              report.write_text("\n".join(lines) + "\n")
+              raise
+
+          report.write_text("\n".join(lines) + "\n")
+          print(report.read_text())
+          PY
+
+      - name: Upload inspection report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wrestling-unity-inspection
+          path: inspection-report.txt
+          if-no-files-found: warn
+          retention-days: 7
