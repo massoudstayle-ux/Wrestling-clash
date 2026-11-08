@@ -14,6 +14,7 @@ public class WrestlerController : MonoBehaviour
     private float attackCooldown;
     private float stunTimer;
     private float blockTimer;
+    private int aiAttackSequence;
     private const float RingLimit = 3.25f;
 
     private void Update()
@@ -67,7 +68,10 @@ public class WrestlerController : MonoBehaviour
             }
             else if (attackCooldown <= 0f)
             {
-                Punch();
+                int move = aiAttackSequence++ % 4;
+                if (move == 2) Kick();
+                else if (move == 3) Grapple();
+                else Punch();
             }
         }
 
@@ -138,10 +142,13 @@ public class WrestlerController : MonoBehaviour
             return;
 
         PairedMoveController paired = GetComponent<PairedMoveController>();
-        if (paired != null && paired.TryPlay(category, damage, range))
+        if (paired != null)
+        {
+            // Never apply instant fallback damage while a paired move is busy or unavailable.
+            paired.TryPlay(category, damage, range);
             return;
+        }
 
-        // Fallback is retained only if the animation library has no usable move.
         WrestlerHealth targetHealth = opponent.GetComponent<WrestlerHealth>();
         if (targetHealth != null)
             targetHealth.Damage(damage);
