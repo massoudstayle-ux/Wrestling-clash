@@ -94,11 +94,11 @@ public class WrestlerController : MonoBehaviour
         mobileVertical = input.y;
     }
 
-    public void Punch() { TryAttack(8f, 1.15f); }
-    public void Kick() { TryAttack(12f, 1.45f); }
-    public void Grapple() { TryAttack(18f, 1.8f); }
+    public void Punch() { TryAttack("punch", 8f, 1.45f); }
+    public void Kick() { TryAttack("kick", 12f, 1.55f); }
+    public void Grapple() { TryAttack("grapple", 18f, 1.85f); }
 
-    private void TryAttack(float damage, float range)
+    private void TryAttack(string category, float damage, float range)
     {
         if (attackCooldown > 0f || opponent == null)
             return;
@@ -114,6 +114,11 @@ public class WrestlerController : MonoBehaviour
             Vector3.Dot(transform.forward, toOpponent.normalized) < 0.15f)
             return;
 
+        PairedMoveController paired = GetComponent<PairedMoveController>();
+        if (paired != null && paired.TryPlay(category, damage, range))
+            return;
+
+        // Safe fallback while a library has no matching performer/receiver clip.
         WrestlerHealth targetHealth = opponent.GetComponent<WrestlerHealth>();
         if (targetHealth != null)
             targetHealth.Damage(damage);
