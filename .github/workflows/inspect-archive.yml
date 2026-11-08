@@ -1,4 +1,4 @@
-name: Inspect Wrestling Unity Archive
+name: Inspect Wrestling Game Archive
 
 on:
   push:
@@ -15,56 +15,74 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Inspect ZIP without modifying it
+      - name: Inspect archive and extract documentation
         shell: bash
         run: |
           python3 - <<'PY'
-          import zipfile
+          import zipfile, json
           from pathlib import Path
 
           archive = Path("RingClash3D_Unity.zip")
-          report = Path("inspection-report.txt")
+          out = Path("inspection-output")
+          out.mkdir(exist_ok=True)
+          report = []
           if not archive.is_file():
-              report.write_text("ERROR: RingClash3D_Unity.zip was not found in repository root.\n")
-              raise SystemExit(1)
+              raise SystemExit("RingClash3D_Unity.zip not found")
+          report += [f"ARCHIVE: {archive.name}", f"SIZE_BYTES: {archive.stat().st_size}"]
 
-          lines = [
-              "ARCHIVE: " + archive.name,
-              f"ARCHIVE_SIZE_BYTES: {archive.stat().st_size}",
-          ]
-          try:
-              with zipfile.ZipFile(archive) as z:
-                  infos = z.infolist()
-                  lines.append(f"ENTRY_COUNT: {len(infos)}")
-                  lines.append("")
-                  lines.append("TOP-LEVEL PATHS:")
-                  roots = sorted({i.filename.split('/')[0] for i in infos if i.filename})
-                  lines.extend(roots[:200])
-                  lines.append("")
-                  lines.append("PROJECT / CONFIG FILES:")
-                  wanted = ("ProjectVersion.txt", "manifest.json", ".unity", ".cs", ".asmdef")
-                  matches = [i for i in infos if any(i.filename.endswith(x) for x in wanted)]
-                  lines.extend(f"{i.filename} | {i.file_size} bytes" for i in matches[:1500])
-                  lines.append("")
-                  lines.append("FIRST 3000 ARCHIVE ENTRIES:")
-                  lines.extend(f"{i.filename} | {i.file_size} bytes" for i in infos[:3000])
-                  bad = z.testzip()
-                  lines.append("")
-                  lines.append("ZIP_INTEGRITY: " + ("OK" if bad is None else "FAILED at " + bad))
-          except Exception as e:
-              lines.append("ZIP_READ_ERROR: " + repr(e))
-              report.write_text("\n".join(lines) + "\n")
-              raise
+          def summarize(value, depth=0):
+              if depth > 4:
+                  return "..."
+              if isinstance(value, dict):
+                  return {str(k): summarize(v, depth+1) for k,v in list(value.items())[:30]}
+              if isinstance(value, list):
+                  return {"type":"array", "length":len(value), "first_items":[summarize(x, depth+1) for x in value[:3]]}
+              if isinstance(value, str):
+                  return value[:160]
+              return value
 
-          report.write_text("\n".join(lines) + "\n")
-          print(report.read_text())
+          with zipfile.ZipFile(archive) as z:
+              infos = z.infolist()
+              names = [i.filename for i in infos]
+              report += [f"ENTRY_COUNT: {len(infos)}", "", "ALL FILES:"]
+              report += [f"{i.filename} | {i.file_size} bytes" for i in infos]
+              bad = z.testzip()
+              report += ["", "ZIP_INTEGRITY: " + ("OK" if bad is None else "FAILED: "+bad)]
+
+              important_docs = [
+                "RingClash3D_Unity/README_AR.md",
+                "RingClash3D_Unity/Assets/RingClash3D/Documentation/Animation_QA_Report_AR.md",
+                "RingClash3D_Unity/Assets/RingClash3D/Documentation/Godot_Source_README_AR.md"
+              ]
+              for name in important_docs:
+                  if name in names:
+                      data = z.read(name).decode("utf-8", errors="replace")
+                      dest = out / Path(name).name
+                      dest.write_text(data, encoding="utf-8")
+                      report += ["", "="*72, f"DOCUMENT: {name}", "="*72, data]
+
+              json_files = [n for n in names if n.endswith(".json")]
+              report += ["", "JSON STRUCTURE SUMMARIES:"]
+              for name in json_files:
+                  try:
+                      obj = json.loads(z.read(name))
+                      report += ["", f"FILE: {name}", f"ROOT_TYPE: {type(obj).__name__}"]
+                      report.append(json.dumps(summarize(obj), ensure_ascii=False, indent=2)[:12000])
+                  except Exception as e:
+                      report += [f"FILE: {name}", f"JSON_PARSE_ERROR: {e}"]
+
+              project_markers = [n for n in names if n.endswith((".unity",".cs",".asmdef","ProjectVersion.txt","manifest.json",".asset",".prefab"))]
+              report += ["", "UNITY PROJECT MARKERS:", *(project_markers or ["NONE FOUND"])]
+
+          (out / "inspection-report.txt").write_text("\n".join(report), encoding="utf-8")
+          print("\n".join(report[:100]))
           PY
 
-      - name: Upload inspection report
+      - name: Upload inspection package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wrestling-unity-inspection
-          path: inspection-report.txt
-          if-no-files-found: warn
+          name: wrestling-game-deep-inspection
+          path: inspection-output/
+          if-no-files-found: error
           retention-days: 7
