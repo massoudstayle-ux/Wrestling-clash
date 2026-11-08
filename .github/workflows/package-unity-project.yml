@@ -49,6 +49,10 @@ jobs:
               print("Imported original files:", len(entries))
               print("Staged GLB roster:", ", ".join(required))
           PY
+      - name: Validate animation frame data and paired moves
+        run: |
+          set -euo pipefail
+          python3 UnityProject/Tools/validate_animation_libraries.py
       - name: Validate Unity project and imported assets
         run: |
           set -euo pipefail
