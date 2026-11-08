@@ -3,54 +3,139 @@ using UnityEngine;
 
 public class PairedMoveController : MonoBehaviour
 {
-    private WrestlerAnimationPlayer performer, receiver;
-    private WrestlerController attacker, defender;
+    private static readonly string[] PunchMoves = { "p1", "p2", "p3", "p4" };
+    private static readonly string[] KickMoves = { "k1", "k2", "k3", "k4" };
+    private static readonly string[] GrappleMoves =
+    {
+        "t_ddt", "t_suplex", "t_slam", "t_powerbomb",
+        "t_piledriver", "t_tiger", "t_powerslam", "t_emerald",
+        "t_electric", "t_burning", "t_ribbreaker", "t_tombstone", "t_aa"
+    };
+
+    private WrestlerAnimationPlayer performer;
+    private WrestlerAnimationPlayer receiver;
+    private WrestlerController attacker;
+    private WrestlerController defender;
+
     private bool busy;
+    private int punchIndex;
+    private int kickIndex;
+    private int grappleIndex;
+    private int reactionIndex;
 
     public void Setup(GameObject a, GameObject b)
     {
-        attacker=a.GetComponent<WrestlerController>();
-        defender=b.GetComponent<WrestlerController>();
-        performer=a.GetComponent<WrestlerAnimationPlayer>();
-        receiver=b.GetComponent<WrestlerAnimationPlayer>();
+        attacker = a.GetComponent<WrestlerController>();
+        defender = b.GetComponent<WrestlerController>();
+        performer = a.GetComponent<WrestlerAnimationPlayer>();
+        receiver = b.GetComponent<WrestlerAnimationPlayer>();
     }
 
-    public bool TryPlay(string category,float damage,float range)
+    public bool TryPlay(string category, float damage, float range)
     {
-        if (busy || attacker==null || defender==null || performer==null || receiver==null) return false;
-        if (Vector3.Distance(attacker.transform.position,defender.transform.position)>range) return false;
+        if (busy || attacker == null || defender == null ||
+            performer == null || receiver == null)
+            return false;
 
-        string[] words = category=="punch" ? new[]{"punch","jab","strike"}
-            : category=="kick" ? new[]{"kick","boot"}
-            : new[]{"rko","ddt","suplex","powerbomb","slam","grapple","clinch"};
+        if (Vector3.Distance(attacker.transform.position, defender.transform.position) > range)
+            return false;
 
-        string chosen=null;
-        foreach(string word in words)
-        {
-            chosen=performer.FindClipStartingWith("t_",word);
-            if(!string.IsNullOrEmpty(chosen) && receiver.HasClip("d_"+chosen.Substring(2))) break;
-            chosen=null;
-        }
-        if(string.IsNullOrEmpty(chosen)) return false;
+        if (category == "punch")
+            return TryPlayStrike(PunchMoves, ref punchIndex, damage, 0.52f);
+        if (category == "kick")
+            return TryPlayStrike(KickMoves, ref kickIndex, damage, 0.58f);
+        if (category == "grapple")
+            return TryPlayGrapple(damage);
 
-        string receiverClip="d_"+chosen.Substring(2);
-        if(!performer.PlayClip(chosen) || !receiver.PlayClip(receiverClip)) return false;
-        float duration=performer.GetClipDuration(chosen);
-        float impact=Mathf.Clamp(duration*0.72f,0.12f,1.8f);
-        StartCoroutine(Impact(damage,impact));
+        return false;
+    }
+
+    private bool TryPlayStrike(
+        string[] moves, ref int nextIndex, float damage, float impactFraction)
+    {
+        string chosen = FindNextAvailable(moves, ref nextIndex, false);
+        if (string.IsNullOrEmpty(chosen) || !receiver.HasClip("hit_a"))
+            return false;
+
+        string reaction = (reactionIndex++ % 2 == 0 && receiver.HasClip("hit_a"))
+            ? "hit_a"
+            : (receiver.HasClip("hit_b") ? "hit_b" : "hit_a");
+
+        if (!performer.PlayClip(chosen) || !receiver.PlayClip(reaction))
+            return false;
+
+        float attackerDuration = performer.GetClipDuration(chosen);
+        float receiverDuration = receiver.GetClipDuration(reaction);
+        float impactDelay = Mathf.Clamp(attackerDuration * impactFraction, 0.12f, 1.0f);
+        float totalDuration = Mathf.Max(attackerDuration, receiverDuration);
+
+        busy = true;
+        StartCoroutine(ResolveMove(damage, impactDelay, totalDuration));
         return true;
     }
 
-    private IEnumerator Impact(float damage,float delay)
+    private bool TryPlayGrapple(float damage)
     {
-        busy=true;
-        yield return new WaitForSeconds(delay);
-        if(defender!=null)
+        string chosen = FindNextAvailable(GrappleMoves, ref grappleIndex, true);
+        if (string.IsNullOrEmpty(chosen))
+            return false;
+
+        string receiverClip = "d_" + chosen.Substring(2);
+        if (!receiver.HasClip(receiverClip))
+            return false;
+
+        if (!performer.PlayClip(chosen) || !receiver.PlayClip(receiverClip))
+            return false;
+
+        float attackerDuration = performer.GetClipDuration(chosen);
+        float receiverDuration = receiver.GetClipDuration(receiverClip);
+        float totalDuration = Mathf.Max(attackerDuration, receiverDuration);
+        // Approximate impact timing until the source library provides impact markers.
+        float impactDelay = Mathf.Clamp(
+            Mathf.Min(attackerDuration, receiverDuration) * 0.78f,
+            0.25f,
+            Mathf.Max(0.25f, totalDuration - 0.1f));
+
+        busy = true;
+        StartCoroutine(ResolveMove(damage, impactDelay, totalDuration));
+        return true;
+    }
+
+    private string FindNextAvailable(string[] candidates, ref int nextIndex, bool paired)
+    {
+        if (candidates == null || candidates.Length == 0)
+            return null;
+
+        for (int offset = 0; offset < candidates.Length; offset++)
         {
-            WrestlerHealth hp=defender.GetComponent<WrestlerHealth>();
-            if(hp!=null) hp.Damage(damage);
+            int index = (nextIndex + offset) % candidates.Length;
+            string candidate = candidates[index];
+            if (!performer.HasClip(candidate))
+                continue;
+
+            if (paired && !receiver.HasClip("d_" + candidate.Substring(2)))
+                continue;
+
+            nextIndex = (index + 1) % candidates.Length;
+            return candidate;
         }
-        yield return new WaitForSeconds(0.25f);
-        busy=false;
+
+        return null;
+    }
+
+    private IEnumerator ResolveMove(float damage, float impactDelay, float totalDuration)
+    {
+        yield return new WaitForSeconds(impactDelay);
+
+        if (defender != null)
+        {
+            WrestlerHealth hp = defender.GetComponent<WrestlerHealth>();
+            if (hp != null)
+                hp.Damage(damage);
+        }
+
+        float recovery = Mathf.Max(0.15f, totalDuration - impactDelay);
+        yield return new WaitForSeconds(recovery);
+        busy = false;
     }
 }
