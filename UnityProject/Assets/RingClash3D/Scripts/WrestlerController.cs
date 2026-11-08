@@ -22,17 +22,22 @@ public class WrestlerController : MonoBehaviour
         stunTimer = Mathf.Max(0f, stunTimer - Time.deltaTime);
         blockTimer = Mathf.Max(0f, blockTimer - Time.deltaTime);
 
-        var health = GetComponent<WrestlerHealth>();
+        WrestlerHealth health = GetComponent<WrestlerHealth>();
         if (health != null)
             health.guard = blockTimer > 0f;
 
         if (stunTimer > 0f || (health != null && health.isKnockedOut))
             return;
 
+        Vector3 animationDirection = Vector3.zero;
+        float animationSpeed = 0f;
+
         if (isPlayer)
         {
             Vector3 direction = new Vector3(mobileHorizontal, 0f, mobileVertical);
-            Vector3 keyboard = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+            Vector3 keyboard = new Vector3(
+                Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+
             if (keyboard.sqrMagnitude > 0.01f)
                 direction = keyboard;
 
@@ -41,6 +46,8 @@ public class WrestlerController : MonoBehaviour
 
             float speed = Input.GetKey(KeyCode.LeftShift) ? 6f : moveSpeed;
             Move(direction, speed);
+            animationDirection = direction;
+            animationSpeed = speed;
 
             if (Input.GetKeyDown(KeyCode.J)) Punch();
             if (Input.GetKeyDown(KeyCode.K)) Kick();
@@ -51,10 +58,25 @@ public class WrestlerController : MonoBehaviour
         {
             Vector3 direction = opponent.position - transform.position;
             direction.y = 0f;
+
             if (direction.magnitude > 1.65f)
-                Move(direction.normalized * 0.72f, moveSpeed);
+            {
+                animationDirection = direction.normalized * 0.72f;
+                animationSpeed = moveSpeed;
+                Move(animationDirection, moveSpeed);
+            }
             else if (attackCooldown <= 0f)
+            {
                 Punch();
+            }
+        }
+
+        WrestlerAnimationPlayer animationPlayer = GetComponent<WrestlerAnimationPlayer>();
+        if (animationPlayer != null)
+        {
+            animationPlayer.PlayLocomotion(
+                animationDirection.sqrMagnitude > 0.01f,
+                animationSpeed > 5f);
         }
 
         FaceOpponent();
@@ -83,7 +105,8 @@ public class WrestlerController : MonoBehaviour
         if (direction.sqrMagnitude > 0.01f)
         {
             Quaternion target = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, target, Time.deltaTime * 9f);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, target, Time.deltaTime * 9f);
         }
     }
 
@@ -118,7 +141,7 @@ public class WrestlerController : MonoBehaviour
         if (paired != null && paired.TryPlay(category, damage, range))
             return;
 
-        // Safe fallback while a library has no matching performer/receiver clip.
+        // Fallback is retained only if the animation library has no usable move.
         WrestlerHealth targetHealth = opponent.GetComponent<WrestlerHealth>();
         if (targetHealth != null)
             targetHealth.Damage(damage);
@@ -127,6 +150,9 @@ public class WrestlerController : MonoBehaviour
     public void Block()
     {
         blockTimer = 0.45f;
+        WrestlerAnimationPlayer animationPlayer = GetComponent<WrestlerAnimationPlayer>();
+        if (animationPlayer != null)
+            animationPlayer.PlayClip("block");
     }
 
     public void Stun(float duration)
