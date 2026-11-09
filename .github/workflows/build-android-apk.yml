@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'UnityProject/**'
+      - 'RingClash3D_Unity.zip'
       - '.github/workflows/build-android-apk.yml'
 
 permissions:
@@ -25,6 +26,59 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Import and validate bundled game assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import zipfile
+
+          archive = "RingClash3D_Unity.zip"
+          required = ("aj", "orton", "boxer", "runner")
+          if not os.path.isfile(archive):
+              raise SystemExit(f"Missing {archive}")
+
+          with zipfile.ZipFile(archive) as z:
+              bad = z.testzip()
+              if bad:
+                  raise SystemExit("Corrupt archive entry: " + bad)
+              prefix = "RingClash3D_Unity/"
+              names = set(z.namelist())
+              for name in names:
+                  if not name.startswith(prefix) or name.endswith('/'):
+                      continue
+                  rel = name[len(prefix):]
+                  if not rel or rel.startswith('../') or '/../' in rel:
+                      continue
+                  destination = (
+                      "UnityProject/Assets/ImportedOriginal/" + rel[7:]
+                      if rel.startswith("Assets/")
+                      else "UnityProject/ImportedOriginal/" + rel
+                  )
+                  os.makedirs(os.path.dirname(destination), exist_ok=True)
+                  with z.open(name) as source, open(destination, "wb") as target:
+                      target.write(source.read())
+
+              for character in required:
+                  glb = f"{prefix}Assets/RingClash3D/Art/Characters/{character}.glb"
+                  animation = f"{prefix}Assets/RingClash3D/Data/Animations/{character}.json"
+                  if glb not in names or animation not in names:
+                      raise SystemExit(f"Missing bundled data for {character}")
+                  os.makedirs("UnityProject/Assets/Resources/Wrestlers", exist_ok=True)
+                  os.makedirs("UnityProject/Assets/Resources/AnimationLibraries", exist_ok=True)
+                  with z.open(glb) as source, open(f"UnityProject/Assets/Resources/Wrestlers/{character}.glb", "wb") as target:
+                      target.write(source.read())
+                  with z.open(animation) as source, open(f"UnityProject/Assets/Resources/AnimationLibraries/{character}.json", "wb") as target:
+                      target.write(source.read())
+
+          print("Imported roster:", ", ".join(required))
+          PY
+          python3 UnityProject/Tools/validate_animation_libraries.py
+          test -f UnityProject/Assets/RingClash3D/Scripts/WrestlingGameBootstrap.cs
+          test -f UnityProject/Assets/RingClash3D/Scripts/WrestlerController.cs
+          test -f UnityProject/Assets/RingClash3D/Scripts/MatchManager.cs
+
       - name: Verify Unity license secrets are configured
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -33,7 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$UNITY_LICENSE" ]; then
-            echo "::error::Missing UNITY_LICENSE. Add your Unity license file contents in Settings > Secrets and variables > Actions."
+            echo "::error::Missing UNITY_LICENSE. Add the Unity license file contents in Settings > Secrets and variables > Actions."
             exit 1
           fi
           if [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; then
