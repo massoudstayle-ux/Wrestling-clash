@@ -17,6 +17,19 @@ public:
     AWrestlingClashCharacter();
     float GetHealth() const { return Health; }
 
+    // Public entry points for future UMG touch controls and virtual joystick.
+    UFUNCTION(BlueprintCallable, Category = "Mobile Input")
+    void SetTouchMoveInput(float Forward, float Right);
+
+    UFUNCTION(BlueprintCallable, Category = "Mobile Input")
+    void TouchPunch();
+
+    UFUNCTION(BlueprintCallable, Category = "Mobile Input")
+    void TouchKick();
+
+    UFUNCTION(BlueprintCallable, Category = "Mobile Input")
+    void TouchLook(float YawDelta, float PitchDelta);
+
 protected:
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
