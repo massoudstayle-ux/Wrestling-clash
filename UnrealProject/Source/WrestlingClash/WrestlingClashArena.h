@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "WrestlingClashArena.generated.h"
 
+class USceneComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 
