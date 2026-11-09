@@ -14,7 +14,7 @@
 
 AWrestlingClashCharacter::AWrestlingClashCharacter()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
 
     GetCapsuleComponent()->InitCapsuleSize(42.0f, 96.0f);
     bUseControllerRotationPitch = false;
@@ -81,6 +81,62 @@ AWrestlingClashCharacter::AWrestlingClashCharacter()
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+}
+
+void AWrestlingClashCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    if (!bIsTrainingOpponent || !GetWorld() || Health <= 0.0f)
+    {
+        return;
+    }
+
+    AWrestlingClashCharacter* Target = nullptr;
+    float BestDistance = TNumericLimits<float>::Max();
+
+    for (TActorIterator<AWrestlingClashCharacter> It(GetWorld()); It; ++It)
+    {
+        AWrestlingClashCharacter* Candidate = *It;
+        if (!Candidate || Candidate == this || Candidate->GetHealth() <= 0.0f)
+        {
+            continue;
+        }
+
+        const float CandidateDistance = FVector::Dist(
+            GetActorLocation(), Candidate->GetActorLocation());
+        if (CandidateDistance < BestDistance)
+        {
+            BestDistance = CandidateDistance;
+            Target = Candidate;
+        }
+    }
+
+    if (!Target)
+    {
+        return;
+    }
+
+    FVector ToTarget = Target->GetActorLocation() - GetActorLocation();
+    ToTarget.Z = 0.0f;
+    const FVector Direction = ToTarget.GetSafeNormal();
+    if (Direction.IsNearlyZero())
+    {
+        return;
+    }
+
+    const FRotator DesiredRotation = Direction.Rotation();
+    SetActorRotation(FMath::RInterpTo(
+        GetActorRotation(), DesiredRotation, DeltaSeconds, 5.0f));
+
+    if (BestDistance > 155.0f)
+    {
+        AddMovementInput(Direction, 0.65f);
+    }
+    else if (GetWorld()->GetTimeSeconds() - LastAttackTime >= 0.9f)
+    {
+        Punch();
+    }
 }
 
 void AWrestlingClashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
