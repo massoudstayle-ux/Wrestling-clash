@@ -20,6 +20,12 @@ void AWrestlingClashGameMode::BeginPlay()
             AWrestlingClashArena::StaticClass(),
             FVector::ZeroVector,
             FRotator::ZeroRotator);
+
+        // Temporary stationary opponent for the first combat test.
+        World->SpawnActor<AWrestlingClashCharacter>(
+            AWrestlingClashCharacter::StaticClass(),
+            FVector(150.0f, 0.0f, 110.0f),
+            FRotator(0.0f, 180.0f, 0.0f));
     }
 }
 
@@ -28,9 +34,9 @@ void AWrestlingClashGameMode::RestartPlayer(AController* NewPlayer)
     Super::RestartPlayer(NewPlayer);
 
     // The first prototype has no authored map or PlayerStart yet.
-    // Place the wrestler above the ring surface to avoid starting inside it.
     if (NewPlayer && NewPlayer->GetPawn())
     {
-        NewPlayer->GetPawn()->SetActorLocation(FVector(0.0f, 0.0f, 110.0f));
+        NewPlayer->GetPawn()->SetActorLocation(FVector(-150.0f, 0.0f, 110.0f));
+        NewPlayer->SetControlRotation(FRotator::ZeroRotator);
     }
 }
