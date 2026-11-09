@@ -3,6 +3,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
@@ -90,6 +93,8 @@ void AWrestlingClashCharacter::SetupPlayerInputComponent(UInputComponent* Player
     PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &APawn::AddControllerPitchInput);
     PlayerInputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &ACharacter::Jump);
     PlayerInputComponent->BindAction(TEXT("Jump"), IE_Released, this, &ACharacter::StopJumping);
+    PlayerInputComponent->BindAction(TEXT("Punch"), IE_Pressed, this, &AWrestlingClashCharacter::Punch);
+    PlayerInputComponent->BindAction(TEXT("Kick"), IE_Pressed, this, &AWrestlingClashCharacter::Kick);
 }
 
 void AWrestlingClashCharacter::MoveForward(float Value)
@@ -107,5 +112,60 @@ void AWrestlingClashCharacter::MoveRight(float Value)
     {
         const FRotator YawRotation(0.0f, Controller->GetControlRotation().Yaw, 0.0f);
         AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y), Value);
+    }
+}
+
+void AWrestlingClashCharacter::Punch()
+{
+    PerformAttack(12.0f, 185.0f);
+}
+
+void AWrestlingClashCharacter::Kick()
+{
+    PerformAttack(18.0f, 210.0f);
+}
+
+void AWrestlingClashCharacter::PerformAttack(float Damage, float Range)
+{
+    if (!GetWorld() || GetWorld()->GetTimeSeconds() - LastAttackTime < 0.45f)
+    {
+        return;
+    }
+
+    LastAttackTime = GetWorld()->GetTimeSeconds();
+
+    for (TActorIterator<AWrestlingClashCharacter> It(GetWorld()); It; ++It)
+    {
+        AWrestlingClashCharacter* Other = *It;
+        if (!Other || Other == this || Other->Health <= 0.0f)
+        {
+            continue;
+        }
+
+        const FVector ToTarget = Other->GetActorLocation() - GetActorLocation();
+        const float Distance = ToTarget.Size();
+        const float Facing = FVector::DotProduct(GetActorForwardVector(), ToTarget.GetSafeNormal());
+
+        if (Distance <= Range && Facing >= 0.25f)
+        {
+            Other->ReceiveHit(Damage);
+            if (GEngine)
+            {
+                GEngine->AddOnScreenDebugMessage(
+                    -1, 1.5f, FColor::Yellow,
+                    FString::Printf(TEXT("Hit! Opponent health: %.0f"), Other->Health));
+            }
+            return;
+        }
+    }
+}
+
+void AWrestlingClashCharacter::ReceiveHit(float Damage)
+{
+    Health = FMath::Max(0.0f, Health - Damage);
+    if (Health <= 0.0f)
+    {
+        GetCharacterMovement()->DisableMovement();
+        UE_LOG(LogTemp, Display, TEXT("%s has been defeated."), *GetName());
     }
 }
