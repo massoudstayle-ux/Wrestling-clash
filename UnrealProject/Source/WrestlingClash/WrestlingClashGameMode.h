@@ -12,4 +12,5 @@ class WRESTLINGCLASH_API AWrestlingClashGameMode : public AGameModeBase
 public:
     AWrestlingClashGameMode();
     virtual void BeginPlay() override;
+    virtual void RestartPlayer(AController* NewPlayer) override;
 };
