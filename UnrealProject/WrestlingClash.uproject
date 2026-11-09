@@ -1,0 +1,12 @@
+{
+  "FileVersion": 3,
+  "Category": "Games",
+  "Description": "Wrestling Clash - standalone Unreal Engine prototype",
+  "Modules": [
+    {
+      "Name": "WrestlingClash",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
