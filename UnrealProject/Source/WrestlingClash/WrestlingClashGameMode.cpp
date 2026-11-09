@@ -23,7 +23,7 @@ void AWrestlingClashGameMode::BeginPlay()
             FVector::ZeroVector,
             FRotator::ZeroRotator);
 
-        // Temporary stationary opponent for the first combat test.
+        // Spawn the basic training opponent and enable its approach/attack behavior.
         AWrestlingClashCharacter* TrainingOpponent =
             World->SpawnActor<AWrestlingClashCharacter>(
                 AWrestlingClashCharacter::StaticClass(),
