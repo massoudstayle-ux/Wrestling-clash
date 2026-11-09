@@ -54,3 +54,19 @@
 
 ## الرجوع عن هذه النسخة
 كل التغييرات موجودة على الفرع `unreal/bootstrap`. للعودة إلى نسخة Unity الأصلية، اختر الفرع `main` في GitHub. لا تدمج هذا الفرع في main إلا بعد مراجعة التغييرات.
+
+### ربط أزرار اللمس للكمة والركلة عبر UMG (الخطوة التالية)
+لم تتم إضافة Widget أو أزرار مرئية إلى المشروع بعد. عند توفر Unreal Editor، يمكن إكمالها دون تغيير نظام القتال الحالي بهذه الخطوات:
+
+1. أنشئ Widget Blueprint باسم `WBP_MobileCombat`.
+2. أضف زرين داخل Canvas Panel، وسمّهما `PunchButton` و`KickButton`، وضعهما أسفل يمين الشاشة مع ترك مساحة لحافة الهاتف.
+3. من حدث `OnClicked` لزر اللكمة، استخدم `Get Owning Player Pawn` ثم `Cast To WrestlingClashCharacter` ثم استدعِ `TouchPunch`.
+4. كرر الربط لزر الركلة باستدعاء `TouchKick`.
+5. أنشئ PlayerController Blueprint، وفي `Event BeginPlay` أنشئ `WBP_MobileCombat` وأضفه إلى الشاشة باستخدام `Add to Viewport`.
+6. عيّن PlayerController Blueprint في GameMode، ثم اختبر اللمس على جهاز Android فعلياً.
+
+ملاحظة: أسماء العقد قد تظهر بصياغة مختلفة قليلاً حسب إصدار Unreal. لا يمكن تأكيد عمل الواجهة قبل فتح المشروع في إصدار Unreal متوافق وتجربتها. لا تضف هذا الـ Widget إلى نسخة Unity؛ هذه التعليمات تخص مجلد `UnrealProject` فقط.
+
+### معلومات إصدار Unreal
+ملف `WrestlingClash.uproject` لا يحدد حالياً `EngineAssociation`، لذلك لم يتم تثبيت إصدار Unreal المستهدف في المستودع. يجب اختيار إصدار Unreal Engine المتوفر لديك قبل توليد ملفات المشروع والبناء؛ لا تخمّن إصداراً عند فتحه.
+
