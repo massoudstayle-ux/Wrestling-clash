@@ -1,10 +1,13 @@
 #include "WrestlingClashCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
 #include "Components/InputComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 AWrestlingClashCharacter::AWrestlingClashCharacter()
 {
@@ -21,6 +24,48 @@ AWrestlingClashCharacter::AWrestlingClashCharacter()
     Movement->MaxWalkSpeed = 420.0f;
     Movement->BrakingDecelerationWalking = 1800.0f;
     Movement->AirControl = 0.25f;
+
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(
+        TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(
+        TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+
+    auto SetupPart = [this](UStaticMeshComponent* Part, UStaticMesh* Mesh,
+                            const FVector& Position, const FVector& Scale)
+    {
+        if (Part && Mesh)
+        {
+            Part->SetStaticMesh(Mesh);
+            Part->SetupAttachment(RootComponent);
+            Part->SetRelativeLocation(Position);
+            Part->SetRelativeScale3D(Scale);
+            Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
+    };
+
+    TorsoMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderTorso"));
+    SetupPart(TorsoMesh, CubeAsset.Succeeded() ? CubeAsset.Object : nullptr,
+              FVector(0, 0, 0), FVector(0.38f, 0.28f, 0.55f));
+
+    HeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderHead"));
+    SetupPart(HeadMesh, SphereAsset.Succeeded() ? SphereAsset.Object : nullptr,
+              FVector(0, 0, 78), FVector(0.23f, 0.23f, 0.25f));
+
+    LeftArmMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderLeftArm"));
+    SetupPart(LeftArmMesh, CubeAsset.Succeeded() ? CubeAsset.Object : nullptr,
+              FVector(0, -53, 18), FVector(0.15f, 0.15f, 0.38f));
+
+    RightArmMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderRightArm"));
+    SetupPart(RightArmMesh, CubeAsset.Succeeded() ? CubeAsset.Object : nullptr,
+              FVector(0, 53, 18), FVector(0.15f, 0.15f, 0.38f));
+
+    LeftLegMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderLeftLeg"));
+    SetupPart(LeftLegMesh, CubeAsset.Succeeded() ? CubeAsset.Object : nullptr,
+              FVector(0, -18, -69), FVector(0.16f, 0.16f, 0.28f));
+
+    RightLegMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderRightLeg"));
+    SetupPart(RightLegMesh, CubeAsset.Succeeded() ? CubeAsset.Object : nullptr,
+              FVector(0, 18, -69), FVector(0.16f, 0.16f, 0.28f));
 
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
