@@ -16,6 +16,7 @@ class WRESTLINGCLASH_API AWrestlingClashCharacter : public ACharacter
 public:
     AWrestlingClashCharacter();
     float GetHealth() const { return Health; }
+    void SetTrainingOpponent(bool bEnabled) { bIsTrainingOpponent = bEnabled; }
 
     // Public entry points for future UMG touch controls and virtual joystick.
     UFUNCTION(BlueprintCallable, Category = "Mobile Input")
@@ -31,6 +32,7 @@ public:
     void TouchLook(float YawDelta, float PitchDelta);
 
 protected:
+    virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 private:
@@ -62,6 +64,8 @@ private:
     float Health = 100.0f;
 
     float LastAttackTime = -100.0f;
+
+    bool bIsTrainingOpponent = false;
 
     void MoveForward(float Value);
     void MoveRight(float Value);
