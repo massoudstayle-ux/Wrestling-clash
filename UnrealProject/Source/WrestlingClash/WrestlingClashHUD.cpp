@@ -3,6 +3,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
+#include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 
 void AWrestlingClashHUD::DrawHUD()
@@ -49,7 +50,13 @@ void AWrestlingClashHUD::DrawHUD()
 void AWrestlingClashHUD::DrawHealthBar(
     const FString& Label, float Health, float X, float Y, float Width)
 {
-    if (!Canvas)
+    if (!Canvas || !GEngine)
+    {
+        return;
+    }
+
+    UFont* SmallFont = GEngine->GetSmallFont();
+    if (!SmallFont)
     {
         return;
     }
@@ -58,7 +65,7 @@ void AWrestlingClashHUD::DrawHealthBar(
     const float BarHeight = 18.0f;
     const float FillWidth = Width * (SafeHealth / 100.0f);
 
-    DrawText(Label, FLinearColor::White, X, Y - 22.0f, GEngine->GetSmallFont(), 1.2f);
+    DrawText(Label, FLinearColor::White, X, Y - 22.0f, SmallFont, 1.2f);
     DrawRect(FLinearColor(0.08f, 0.08f, 0.08f, 0.90f),
              X, Y, Width, BarHeight);
     if (FillWidth > 0.0f)
@@ -74,5 +81,5 @@ void AWrestlingClashHUD::DrawHealthBar(
 
     DrawText(FString::Printf(TEXT("%.0f / 100"), SafeHealth),
              FLinearColor::White, X + 4.0f, Y + 1.0f,
-             GEngine->GetSmallFont(), 0.85f);
+             SmallFont, 0.85f);
 }
