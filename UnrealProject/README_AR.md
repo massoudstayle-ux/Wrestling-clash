@@ -43,5 +43,12 @@
 - هذه واجهة C++ أولية للاختبار وليست UMG أو تصميماً نهائياً للهاتف.
 - لم يتم بناء المشروع أو تشغيله داخل Unreal Editor؛ يلزم التحقق من توافق دوال الرسم مع إصدار Unreal المستهدف.
 
+### حالة تجربة بناء Android APK
+- فُحص ملف `.github/workflows/build-android-apk.yml`: هذا المسار يستخدم Unity Builder ويستهدف مجلد `UnityProject`، لذلك لا يبني نسخة Unreal.
+- لا توجد تشغيلات GitHub Actions مسجلة على فرع `unreal/bootstrap` حتى وقت الفحص.
+- بيئة التنفيذ المتاحة في هذه الجلسة لا تحتوي على `UnrealEditor` أو `RunUAT.sh` أو Android SDK/NDK؛ لذلك تعذر تنفيذ بناء Unreal أو إنتاج APK صالح هنا.
+- لا يجوز اعتبار نجاح Workflow الخاص بـ Unity دليلاً على بناء نسخة Unreal.
+- يلزم جهاز/Runner يحتوي إصدار Unreal Engine متوافقاً مع Android SDK وNDK وJava، مع إعداد Android في Unreal، قبل تشغيل Packaging.
+
 ## الرجوع عن هذه النسخة
 كل التغييرات موجودة على الفرع `unreal/bootstrap`. للعودة إلى نسخة Unity الأصلية، اختر الفرع `main` في GitHub. لا تدمج هذا الفرع في main إلا بعد مراجعة التغييرات.
