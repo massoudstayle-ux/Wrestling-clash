@@ -15,6 +15,7 @@ class WRESTLINGCLASH_API AWrestlingClashCharacter : public ACharacter
 
 public:
     AWrestlingClashCharacter();
+    float GetHealth() const { return Health; }
 
 protected:
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -44,6 +45,15 @@ private:
     UPROPERTY(VisibleAnywhere, Category = "Placeholder")
     TObjectPtr<UStaticMeshComponent> RightLegMesh;
 
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float Health = 100.0f;
+
+    float LastAttackTime = -100.0f;
+
     void MoveForward(float Value);
     void MoveRight(float Value);
+    void Punch();
+    void Kick();
+    void PerformAttack(float Damage, float Range);
+    void ReceiveHit(float Damage);
 };
