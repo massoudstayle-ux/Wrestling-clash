@@ -24,10 +24,15 @@ void AWrestlingClashGameMode::BeginPlay()
             FRotator::ZeroRotator);
 
         // Temporary stationary opponent for the first combat test.
-        World->SpawnActor<AWrestlingClashCharacter>(
-            AWrestlingClashCharacter::StaticClass(),
-            FVector(150.0f, 0.0f, 110.0f),
-            FRotator(0.0f, 180.0f, 0.0f));
+        AWrestlingClashCharacter* TrainingOpponent =
+            World->SpawnActor<AWrestlingClashCharacter>(
+                AWrestlingClashCharacter::StaticClass(),
+                FVector(150.0f, 0.0f, 110.0f),
+                FRotator(0.0f, 180.0f, 0.0f));
+        if (TrainingOpponent)
+        {
+            TrainingOpponent->SetTrainingOpponent(true);
+        }
     }
 }
 
