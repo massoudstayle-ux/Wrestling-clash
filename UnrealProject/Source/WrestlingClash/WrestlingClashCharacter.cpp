@@ -97,6 +97,29 @@ void AWrestlingClashCharacter::SetupPlayerInputComponent(UInputComponent* Player
     PlayerInputComponent->BindAction(TEXT("Kick"), IE_Pressed, this, &AWrestlingClashCharacter::Kick);
 }
 
+void AWrestlingClashCharacter::SetTouchMoveInput(float Forward, float Right)
+{
+    // UMG joystick widgets can call this while the stick is held.
+    MoveForward(FMath::Clamp(Forward, -1.0f, 1.0f));
+    MoveRight(FMath::Clamp(Right, -1.0f, 1.0f));
+}
+
+void AWrestlingClashCharacter::TouchPunch()
+{
+    Punch();
+}
+
+void AWrestlingClashCharacter::TouchKick()
+{
+    Kick();
+}
+
+void AWrestlingClashCharacter::TouchLook(float YawDelta, float PitchDelta)
+{
+    AddControllerYawInput(YawDelta);
+    AddControllerPitchInput(PitchDelta);
+}
+
 void AWrestlingClashCharacter::MoveForward(float Value)
 {
     if (Controller && FMath::Abs(Value) > KINDA_SMALL_NUMBER)
