@@ -1,0 +1,12 @@
+{
+  "name": "Wrestling Clash source workspace",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-dotnettools.csdevkit"
+      ]
+    }
+  }
+}
