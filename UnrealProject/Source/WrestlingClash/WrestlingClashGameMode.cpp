@@ -1,6 +1,7 @@
 #include "WrestlingClashGameMode.h"
 #include "WrestlingClashArena.h"
 #include "WrestlingClashCharacter.h"
+#include "WrestlingClashHUD.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
@@ -8,6 +9,7 @@
 AWrestlingClashGameMode::AWrestlingClashGameMode()
 {
     DefaultPawnClass = AWrestlingClashCharacter::StaticClass();
+    HUDClass = AWrestlingClashHUD::StaticClass();
 }
 
 void AWrestlingClashGameMode::BeginPlay()
